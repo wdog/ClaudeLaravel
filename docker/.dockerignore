@@ -1,0 +1,47 @@
+# ============================================================================
+# Docker Build Context Ignore File
+# Files and directories to exclude from Docker build context
+# ============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE
+CHANGELOG*
+
+# IDE and editors
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.phpunit.result.cache
+tests/
+phpunit.xml
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+docker-compose*.yml
+.dockerignore
+Dockerfile*
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

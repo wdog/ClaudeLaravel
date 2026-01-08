@@ -1,0 +1,58 @@
+# ============================================================================
+# Docker Build Context Ignore File - Root
+# ============================================================================
+
+# MySQL data (NEVER include in image)
+database/data/*
+!database/data/.gitkeep
+
+# Docker volumes
+docker/volumes/*
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE
+CHANGELOG*
+
+# IDE and editors
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker compose files (not needed in image)
+docker-compose*.yml
+.env*
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Source control from src/ (Laravel specific)
+src/.git
+src/node_modules
+src/vendor
+src/.env
+src/.env.*
+src/storage/logs/*
+src/storage/framework/cache/*
+src/storage/framework/sessions/*
+src/storage/framework/views/*
+src/bootstrap/cache/*
