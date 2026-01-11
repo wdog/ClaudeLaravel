@@ -31,6 +31,14 @@ echo "  Laravel 12 + FilamentPHP v4 Installer"
 echo "============================================="
 echo -e "${NC}"
 
+# Stop running containers before installation
+if docker ps --format '{{.Names}}' | grep -q 'laravel-app\|laravel-mysql'; then
+    echo -e "${YELLOW}Stopping running containers...${NC}"
+    docker-compose down 2>/dev/null || true
+    echo -e "${GREEN}✓ Containers stopped${NC}"
+    echo ""
+fi
+
 # Clean install option
 if [ "$CLEAN_INSTALL" = true ]; then
     echo -e "${YELLOW}⚠️  CLEAN INSTALL MODE${NC}"
