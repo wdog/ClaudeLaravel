@@ -21,6 +21,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       VITE_DEV_SERVER_ENABLED: "true"
+      VITE_HOST: ${HOST_IP:-localhost}
 
       # Laravel development settings
       LOG_LEVEL: debug

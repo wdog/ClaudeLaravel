@@ -121,6 +121,10 @@ DB_PASSWORD="laravel"
 APP_ENV="local"
 APP_NAME="LaravelApp"
 
+# Detect LAN IP as default
+DEFAULT_HOST=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || echo "localhost")
+APP_HOST="${DEFAULT_HOST}"
+
 # Interactive configuration (skip if --clean flag is used)
 if [ "$CLEAN_INSTALL" = false ]; then
     echo -e "${YELLOW}Configuration (press Enter to use defaults):${NC}"
@@ -132,7 +136,15 @@ if [ "$CLEAN_INSTALL" = false ]; then
     read -p "Environment (local/production) [${APP_ENV}]: " input
     APP_ENV=${input:-$APP_ENV}
 
+    echo ""
+    echo -e "${CYAN}Application Host (IP or domain name):${NC}"
+    echo "  Use your LAN IP to access from other devices (phone, tablet, etc.)"
+    echo "  Use 'localhost' for local-only development"
+    read -p "Host [${DEFAULT_HOST}]: " input
+    APP_HOST=${input:-$DEFAULT_HOST}
+
     # DB_HOST is always 'mysql' for Docker - do not ask user
+    echo ""
     echo -e "${CYAN}Database Host: ${DB_HOST} (fixed for Docker)${NC}"
 
     read -p "Database Name [${DB_DATABASE}]: " input
@@ -147,6 +159,7 @@ else
     echo -e "${YELLOW}Using default configuration (--clean flag)${NC}"
     echo "  App Name: ${APP_NAME}"
     echo "  Environment: ${APP_ENV}"
+    echo "  Host: ${APP_HOST}"
     echo "  Database Host: ${DB_HOST} (fixed for Docker)"
     echo "  Database: ${DB_DATABASE}"
     echo "  Database User: ${DB_USERNAME}"
@@ -183,7 +196,7 @@ sed -i "s/^APP_ENV=.*/APP_ENV=${APP_ENV}/" src/.env
 
 # Update APP_URL for HTTPS (always use HTTPS with self-signed certificate)
 # Always use port 443 (standard HTTPS port)
-APP_URL="https://localhost"
+APP_URL="https://${APP_HOST}"
 sed -i "s|^APP_URL=.*|APP_URL=${APP_URL}|" src/.env
 
 # Set ASSET_URL to ensure assets are served via HTTPS

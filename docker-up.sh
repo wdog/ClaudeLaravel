@@ -60,6 +60,18 @@ echo ""
 export PUID=$(id -u)
 export PGID=$(id -g)
 
+# Extract host from APP_URL in .env for Vite HMR
+APP_URL=$(grep -E "^APP_URL=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "https://localhost")
+# Remove protocol and port, keep only hostname/IP
+HOST_IP=$(echo "$APP_URL" | sed -E 's|^https?://||' | sed -E 's|:[0-9]+$||' | sed -E 's|/.*$||')
+export HOST_IP
+
+echo -e "${BLUE}Network Configuration:${NC}"
+echo "  APP_URL: ${APP_URL}"
+echo "  Vite Host: ${HOST_IP}"
+echo "  Vite will be accessible at: http://${HOST_IP}:5173"
+echo ""
+
 # Parse command line arguments
 BUILD_FLAG=""
 DETACH_FLAG="-d"  # Detached by default
@@ -104,10 +116,10 @@ echo -e "${GREEN}  Application Started!${NC}"
 echo -e "${GREEN}================================${NC}"
 echo ""
 echo -e "${BLUE}Access your application:${NC}"
-echo "  HTTPS: https://localhost"
+echo "  HTTPS: https://localhost (or https://${HOST_IP})"
 echo "  Filament Admin: https://localhost/admin"
 if [ "$BUILD_TARGET" = "development" ]; then
-    echo "  Vite HMR: http://localhost:5173"
+    echo "  Vite HMR: http://${HOST_IP}:5173"
 fi
 echo ""
 echo -e "${BLUE}Useful commands:${NC}"
