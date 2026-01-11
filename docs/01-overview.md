@@ -216,27 +216,46 @@ Risparmio: ~80% di spazio! 🎉
 
 ### Development
 ```bash
-# 1. Setup iniziale (una volta)
+# 1. Setup iniziale (una volta - interattivo)
 ./install-laravel.sh
+# - Chiede HOST (IP o domain) - auto-rileva IP LAN
+# - Configura automaticamente APP_URL=https://${HOST}
+# - Configura VITE_HMR_HOST=${HOST}
+# - Genera vite.config.js con HTTPS
+# - Imposta permessi con sudo chmod 777
 
-# 2. Avvia ambiente development
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# 2. Avvia ambiente development (detached by default)
+./docker-up.sh --build
+# Auto-rileva mode da src/.env
 
-# 3. Sviluppa con HMR
-# Modifica file in src/
-# Vite ricarica automaticamente il browser
+# 3. Esegui migrazioni (MANUALMENTE - richiesto!)
+docker exec -it laravel-app php artisan migrate --force
 
-# 4. Test
-docker-compose exec app php artisan test
+# 4. Sviluppa con HMR su HTTPS
+# - Accedi a https://{HOST}
+# - Accedi a https://{HOST}:5173 (Vite HMR)
+# - Accetta i certificati self-signed
+# - Modifica file in src/resources/
+# - Vite ricarica automaticamente il browser
+
+# 5. Test da dispositivi LAN
+# - Usa IP LAN come HOST (es: 192.168.88.40)
+# - Accedi da phone/tablet sulla stessa rete
+
+# 6. View logs (in detached mode)
+docker-compose logs -f
+# Oppure usa --foreground
+./docker-up.sh --foreground
 ```
 
 ### Production
 ```bash
 # 1. Build immagine production
-docker-compose build
+./docker-up.sh --build
+# Auto-rileva mode da APP_ENV in src/.env
 
-# 2. Deploy
-docker-compose up -d
+# 2. Esegui migrazioni
+docker exec -it laravel-app php artisan migrate --force
 
 # 3. Monitor
 docker-compose logs -f app

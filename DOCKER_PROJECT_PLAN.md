@@ -3,6 +3,63 @@
 
 ---
 
+## 🚀 CURRENT IMPLEMENTATION STATUS (2026-01-11)
+
+**Project Status**: ✅ Implementation Complete (Ready for Testing)
+
+### Key Features Implemented
+
+1. **Network Configuration**
+   - Single HOST configuration (IP or domain) during installation
+   - Auto-detects LAN IP as default
+   - `APP_URL` built as `https://${HOST}` (HTTPS by default)
+   - `VITE_HMR_HOST` set to `${HOST}` for LAN access
+   - No port specification needed (uses standard 443)
+
+2. **Vite with HTTPS**
+   - Vite uses HTTPS with self-signed certificates
+   - HMR accessible at `https://{HOST}:5173`
+   - Vite config auto-generated during installation (no stub files)
+   - Reads `VITE_HMR_HOST` from `.env`
+   - Full LAN support for testing on mobile devices
+
+3. **Installation & Workflow**
+   - Interactive installation with `./install-laravel.sh`
+   - `docker-up.sh` runs detached by default
+   - Use `--foreground` flag to see logs
+   - Migrations NOT run automatically (manual execution required)
+   - Auto-detects development/production mode from `src/.env`
+
+4. **Permission Handling**
+   - Uses `sudo chmod 777` for storage/bootstrap/cache/public/src
+   - Docker-based cleanup for vendor/node_modules
+   - Handles MySQL data permissions correctly
+   - Clean install option with `--clean` flag
+
+5. **Documentation**
+   - Complete README.md with current workflow
+   - Updated docs/ directory
+   - Comprehensive troubleshooting section
+   - LAN access configuration documented
+
+### Quick Start
+
+```bash
+# 1. Installation (interactive)
+./install-laravel.sh
+
+# 2. Start containers (detached)
+./docker-up.sh --build
+
+# 3. Run migrations (manual)
+docker exec -it laravel-app php artisan migrate --force
+
+# 4. Access app
+# https://{HOST} (e.g., https://192.168.88.40)
+```
+
+---
+
 ## 📋 PREREQUISITI E REQUISITI
 
 ### Software Necessario
@@ -552,7 +609,7 @@ Subject Alternative Names:
 
 **Supporto IP LAN**:
 Il certificato include automaticamente l'IP LAN del container e i range delle reti private, permettendo l'accesso sicuro da:
-- `https://localhost:8443`
+- `https://{HOST}`
 - `https://127.0.0.1:8443`
 - `https://<tuo-ip-lan>:8443` (es: https://192.168.1.100:8443)
 
@@ -564,7 +621,7 @@ Il certificato include automaticamente l'IP LAN del container e i range delle re
 - Per sostituire il certificato, montare i file in `/etc/nginx/ssl/`
 
 **Accesso all'applicazione**:
-- Development: `https://localhost:8443` (porta mappata da docker-compose)
+- Development: `https://{HOST}` (porta mappata da docker-compose)
 - Il browser chiederà di accettare il certificato self-signed
 
 ---

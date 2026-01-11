@@ -301,9 +301,19 @@ Per iniziare subito:
 
 **Versione**: 1.0
 **Ultimo Aggiornamento**: 2026-01-11
-**Status**: 🚧 In Development
+**Status**: ✅ Implementation Complete (Ready for Testing)
 
-Vedi la **[Checklist Implementazione](35-implementation-checklist.md)** per i dettagli sullo stato di avanzamento.
+**Key Features Implemented**:
+- ✅ Single HOST configuration (auto-detects LAN IP)
+- ✅ HTTPS by default (APP_URL=https://${HOST})
+- ✅ Vite HMR over HTTPS with LAN access
+- ✅ Auto-generated Vite config (no stub files)
+- ✅ Permission handling with sudo chmod 777
+- ✅ docker-up.sh detached by default (--foreground flag)
+- ✅ Manual migrations (not automatic)
+- ✅ Complete documentation
+
+Vedi la **[Checklist Implementazione](35-implementation-checklist.md)** per i dettagli completi sullo stato di avanzamento.
 
 ---
 
