@@ -88,8 +88,25 @@ sed -i "s/^APP_NAME=.*/APP_NAME=\"${APP_NAME}\"/" src/.env
 # Update APP_ENV
 sed -i "s/^APP_ENV=.*/APP_ENV=${APP_ENV}/" src/.env
 
-# Update APP_URL for HTTPS
-sed -i "s|^APP_URL=.*|APP_URL=https://localhost:8443|" src/.env
+# Update APP_URL for HTTPS (always use HTTPS with self-signed certificate)
+# Production: https://localhost (or your domain)
+# Development: https://localhost:8443 (mapped port)
+if [ "$APP_ENV" = "local" ]; then
+    APP_URL="https://localhost:8443"
+else
+    APP_URL="https://localhost"
+fi
+sed -i "s|^APP_URL=.*|APP_URL=${APP_URL}|" src/.env
+
+# Set ASSET_URL to ensure assets are served via HTTPS
+# Check if ASSET_URL exists in .env, if not add it
+if grep -q "^ASSET_URL=" src/.env; then
+    sed -i "s|^ASSET_URL=.*|ASSET_URL=${APP_URL}|" src/.env
+else
+    echo "ASSET_URL=${APP_URL}" >> src/.env
+fi
+
+echo -e "${GREEN}✓ APP_URL and ASSET_URL set to ${APP_URL}${NC}"
 
 # Update Database configuration
 sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=${DB_CONNECTION}/" src/.env
@@ -212,7 +229,12 @@ echo "  1. Build and start containers:"
 echo -e "     ${YELLOW}docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build${NC}"
 echo ""
 echo "  2. Access your application:"
-echo -e "     ${YELLOW}https://localhost:8443${NC}"
+echo -e "     ${YELLOW}https://localhost:8443${NC} (HTTPS - self-signed certificate)"
+echo -e "     ${YELLOW}http://localhost:8080${NC} (HTTP - redirects to HTTPS)"
+echo ""
+echo -e "  ${GREEN}Note:${NC} Your browser will show a security warning because we use"
+echo "  a self-signed SSL certificate. This is normal for development."
+echo "  Click 'Advanced' and 'Proceed to localhost' to continue."
 echo ""
 echo "  3. Access Filament Admin Panel:"
 echo -e "     ${YELLOW}https://localhost:8443/admin${NC}"

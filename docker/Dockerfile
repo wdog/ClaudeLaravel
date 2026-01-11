@@ -98,8 +98,8 @@ RUN mkdir -p \
         /etc/nginx/ssl \
         /var/lib/nginx
 
-# Expose HTTPS port 443
-EXPOSE 443
+# Expose HTTP and HTTPS ports
+EXPOSE 80 443
 
 # s6-overlay entrypoint
 ENTRYPOINT ["/init"]

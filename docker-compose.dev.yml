@@ -33,6 +33,7 @@ services:
 
     # Expose additional ports for development
     ports:
+      - "8080:80"     # HTTP (redirects to HTTPS) - mapped to 8080 to avoid conflicts
       - "8443:443"    # HTTPS - mapped to 8443 to avoid conflicts
       - "5173:5173"   # Vite HMR dev server
 

@@ -49,20 +49,47 @@ The system reads ALL configuration from `src/.env` (Laravel's .env file):
    - Single source of truth: `src/.env`
    - No need for separate Docker `.env` file
 
-## 🔐 HTTPS Access
+## 🔐 HTTPS Configuration
 
-The container generates a self-signed SSL certificate automatically (valid 10 years).
+The application is **HTTPS-only** with automatic HTTP→HTTPS redirection.
 
-**Access from**:
-- Localhost: `https://localhost:8443`
-- LAN: `https://192.168.x.x:8443` (use your local IP)
-- Filament Admin: `https://localhost:8443/admin`
+### SSL Certificate
+
+A **self-signed SSL certificate** is automatically generated during build (valid 10 years).
 
 **Certificate includes**:
-- localhost, *.localhost
-- 127.0.0.1
-- Your LAN IP (auto-detected)
-- Private network ranges
+- `localhost`, `*.localhost`
+- `127.0.0.1`
+- Your LAN IP (auto-detected during build)
+- Private network ranges (192.168.0.0/16, 172.16.0.0/12, 10.0.0.0/8)
+
+### Access URLs
+
+**Development Mode** (`APP_ENV=local`):
+- HTTPS: `https://localhost:8443` ✅ Recommended
+- HTTP: `http://localhost:8080` → Redirects to HTTPS
+- Vite HMR: `http://localhost:5173`
+- Filament Admin: `https://localhost:8443/admin`
+
+**Production Mode** (`APP_ENV=production`):
+- HTTPS: `https://localhost:443` ✅ Recommended
+- HTTP: `http://localhost:80` → Redirects to HTTPS
+- Filament Admin: `https://localhost/admin`
+
+### Browser Security Warning
+
+Your browser will show a **security warning** because the SSL certificate is self-signed:
+
+```
+⚠️ Your connection is not private
+   NET::ERR_CERT_AUTHORITY_INVALID
+```
+
+**This is normal for development!** To proceed:
+1. Click **"Advanced"**
+2. Click **"Proceed to localhost (unsafe)"**
+
+For production, replace with a valid certificate (Let's Encrypt, commercial CA, etc.)
 
 ## 📁 Project Structure
 
