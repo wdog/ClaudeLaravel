@@ -15,6 +15,7 @@ services:
       # target will be set by docker-up.sh based on APP_ENV in src/.env
       target: ${BUILD_TARGET:-production}
     image: laravel-app:${BUILD_TARGET:-production}
+    # ! change image name here
     container_name: laravel-app
     restart: unless-stopped
 

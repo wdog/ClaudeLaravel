@@ -474,7 +474,6 @@ echo -e "     ${YELLOW}./install-laravel.sh --clean${NC}"
 echo ""
 echo -e "${CYAN}Fix storage permissions if needed:${NC}"
 echo -e "     ${YELLOW}docker exec -it laravel-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache${NC}"
-sudo chmod -R 775 ap/cache${NC}"
-echo -e "     ${YELLOW}docker exec -it laravel-app chmod -R 775 /var/www/html/storage /var/www/html/bootstr
+echo -e "     ${YELLOW}docker exec -it laravel-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache${NC}"
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
