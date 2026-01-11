@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # ============================================================================
 # Laravel 12 + FilamentPHP v4 Installation Script
 # Creates a new Laravel project in src/ with FilamentPHP and proper configuration
@@ -209,6 +210,22 @@ fi
 
 echo -e "${GREEN}✓ APP_URL and ASSET_URL set to ${APP_URL}${NC}"
 
+
+# Set VITE_HMR_HOST to ensure assets are served via HTTPS
+# Check if VITE_HMR_HOST exists in .env, if not add it
+if grep -q "^VITE_HMR_HOST=" src/.env; then
+    sed -i "s|^VITE_HMR_HOST=.*|VITE_HMR_HOST=${APP_HOST}|" src/.env
+else
+    echo "VITE_HMR_HOST=${APP_HOST}" >> src/.env
+fi
+
+echo -e "${GREEN}✓ VITE_HMR_HOST set to ${APP_HOST}${NC}"
+
+
+
+
+
+
 # Update Database configuration
 # Laravel 12 has commented DB_ lines by default, so we need to uncomment and set them
 sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=${DB_CONNECTION}/" src/.env
@@ -244,13 +261,72 @@ if [ "$APP_ENV" = "local" ]; then
     echo -e "${GREEN}✓ Laravel Debugbar installed${NC}"
 fi
 
-# Install NPM dependencies and build assets
+# Configure Vite for development
 if [ "$APP_ENV" = "local" ]; then
+    echo -e "${BLUE}Configuring Vite for HTTPS and HMR...${NC}"
+
+    # Patch vite.config.js to add HTTPS, HMR host, and Filament theme
+    cat > src/vite.config.js <<'VITE_CONFIG'
+import { defineConfig, loadEnv } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+import laravel, { refreshPaths } from 'laravel-vite-plugin'
+import fs from 'fs';
+
+export default defineConfig(({ mode }) => {
+    // Load env file based on `mode` in the current working directory.
+    const env = loadEnv(mode, process.cwd(), '');
+    const hmrHost = env.VITE_HMR_HOST || 'localhost';
+
+    return {
+        plugins: [
+            laravel({
+                input: [
+                    'resources/css/app.css',
+                    'resources/js/app.js',
+                    'resources/css/filament/dinner/theme.css'
+                ],
+                refresh: [
+                    ...refreshPaths,
+                    "app/Livewire/**",
+                    "app/Filament/**",
+                    "app/Providers/Filament/**",
+                    "resources/views/**"
+                ],
+                detectTls: false,
+            }),
+            tailwindcss(),
+        ],
+        server: {
+            https: {
+                key: fs.readFileSync('/etc/nginx/ssl/nginx.key'),
+                cert: fs.readFileSync('/etc/nginx/ssl/nginx.crt'),
+            },
+            host: "0.0.0.0",
+            port: 5173,
+            strictPort: true,
+            hmr: {
+                protocol: 'wss',
+                clientPort: 5173,
+                host: hmrHost,
+            },
+            watch: {
+                // usePolling: true, // Uncomment if file watching doesn't work
+            }
+        },
+    };
+});
+VITE_CONFIG
+
+    echo -e "${GREEN}✓ vite.config.js configured for HTTPS and HMR${NC}"
+
     # Development: install dependencies only (Vite will run in dev mode)
     echo -e "${BLUE}Installing NPM dependencies (Vite, etc.)...${NC}"
     docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
         npm install
     echo -e "${GREEN}✓ NPM dependencies installed${NC}"
+
+
+
 else
     # Production: install dependencies and build assets
     echo -e "${BLUE}Installing NPM dependencies...${NC}"
@@ -362,15 +438,15 @@ echo "  1. Build and start containers:"
 echo -e "     ${YELLOW}docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build${NC}"
 echo ""
 echo "  2. Access your application:"
-echo -e "     ${YELLOW}https://localhost${NC} (HTTPS - self-signed certificate)"
-echo -e "     ${YELLOW}http://localhost${NC} (HTTP - redirects to HTTPS)"
+echo -e "     ${YELLOW}https://${IP}${NC} (HTTPS - self-signed certificate)"
+echo -e "     ${YELLOW}http://${IP}${NC} (HTTP - redirects to HTTPS)"
 echo ""
 echo -e "  ${GREEN}Note:${NC} Your browser will show a security warning because we use"
 echo "  a self-signed SSL certificate. This is normal for development."
-echo "  Click 'Advanced' and 'Proceed to localhost' to continue."
+echo "  Click 'Advanced' and 'Proceed to ${IP}' to continue."
 echo ""
 echo "  3. Access Filament Admin Panel:"
-echo -e "     ${YELLOW}https://localhost/admin${NC}"
+echo -e "     ${YELLOW}https://${IP}/admin${NC}"
 echo ""
 echo "  4. Create Filament admin user (inside container):"
 echo -e "     ${YELLOW}docker exec -it laravel-app php artisan make:filament-user${NC}"
