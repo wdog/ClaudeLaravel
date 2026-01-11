@@ -32,11 +32,14 @@ echo "============================================="
 echo -e "${NC}"
 
 # Stop running containers before installation
-if docker ps --format '{{.Names}}' | grep -q 'laravel-app\|laravel-mysql'; then
-    echo -e "${YELLOW}Stopping running containers...${NC}"
-    docker-compose down 2>/dev/null || true
-    echo -e "${GREEN}✓ Containers stopped${NC}"
-    echo ""
+# Check if docker-compose.yml exists and has running containers
+if [ -f "docker-compose.yml" ]; then
+    if docker-compose ps --services --filter "status=running" 2>/dev/null | grep -q .; then
+        echo -e "${YELLOW}Stopping running containers...${NC}"
+        docker-compose down 2>/dev/null || true
+        echo -e "${GREEN}✓ Containers stopped${NC}"
+        echo ""
+    fi
 fi
 
 # Clean install option
