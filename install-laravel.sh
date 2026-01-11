@@ -50,21 +50,41 @@ if [ "$CLEAN_INSTALL" = true ]; then
     echo ""
     echo -e "${BLUE}Removing existing installation...${NC}"
 
-    # Remove src/ directory
+    # Remove src/ directory with proper permission handling
     if [ -d "src" ]; then
         echo -e "${YELLOW}Removing src/ directory...${NC}"
-        rm -rf src/
+
+        # Use Docker to remove vendor/ and node_modules/ with correct permissions
+        if [ -d "src/vendor" ] || [ -d "src/node_modules" ]; then
+            echo -e "${YELLOW}Removing vendor/ and node_modules/ using Docker (correct permissions)...${NC}"
+            docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "rm -rf /app/vendor /app/node_modules"
+        fi
+
+        # Now remove the rest with regular rm
+        if ! rm -rf src/ 2>/dev/null; then
+            echo -e "${YELLOW}Permission denied, trying with sudo...${NC}"
+            sudo rm -rf src/
+        fi
+
         echo -e "${GREEN}✓ src/ removed${NC}"
     fi
 
     # Remove database data
     if [ -d "database/data" ]; then
         echo -e "${YELLOW}Removing database/data/ directory...${NC}"
-        # Try with sudo if regular rm fails (in case of permission issues)
-        if ! rm -rf database/data/* 2>/dev/null; then
-            echo -e "${YELLOW}Permission denied, trying with sudo...${NC}"
+
+        # Use Docker Alpine to handle MySQL files with correct permissions
+        if [ -n "$(ls -A database/data 2>/dev/null)" ]; then
+            echo -e "${YELLOW}Removing MySQL data using Docker (correct permissions)...${NC}"
+            docker run --rm -v "$(pwd)/database/data:/data" alpine:latest sh -c "rm -rf /data/*"
+        fi
+
+        # Fallback to sudo if Docker fails or isn't available
+        if [ -n "$(ls -A database/data 2>/dev/null)" ]; then
+            echo -e "${YELLOW}Fallback: using sudo to remove remaining files...${NC}"
             sudo rm -rf database/data/*
         fi
+
         echo -e "${GREEN}✓ database/data/ cleaned${NC}"
     fi
 
@@ -77,8 +97,11 @@ if [ -d "src" ] && [ -f "src/artisan" ]; then
     echo -e "${RED}ERROR: Laravel project already exists in src/${NC}"
     echo ""
     echo "Options:"
-    echo "  1. Remove manually: rm -rf src/ database/data/*"
-    echo "  2. Run with --clean flag: ./install-laravel.sh --clean"
+    echo -e "  1. ${GREEN}Recommended:${NC} Run with --clean flag (handles permissions correctly):"
+    echo -e "     ${YELLOW}./install-laravel.sh --clean${NC}"
+    echo ""
+    echo "  2. Manual removal (may require sudo for vendor/ and database/data/):"
+    echo -e "     ${YELLOW}rm -rf src/ database/data/*${NC}"
     echo ""
     exit 1
 fi

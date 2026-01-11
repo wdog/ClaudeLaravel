@@ -21,9 +21,17 @@ Docker-based Laravel development environment with PHP 8.4 Alpine FPM, Nginx HTTP
 
 **Clean Install Option**:
 - `./install-laravel.sh --clean` removes all existing Laravel code and database data
+- **Handles permissions correctly**: Uses Docker to remove `vendor/` and `node_modules/`
+- Removes MySQL data files with proper permissions handling
 - Asks for confirmation before deleting
 - Useful for starting completely fresh
 - **WARNING**: Irreversible action!
+
+**Why use --clean instead of manual `rm -rf src/`?**
+- Docker creates `vendor/` and `node_modules/` with container user permissions
+- MySQL creates database files with mysql user permissions (UID 999)
+- Manual `rm` may fail with "Permission denied"
+- `--clean` uses Docker to remove files with correct permissions
 
 ### Option 2: Existing Laravel Project
 
