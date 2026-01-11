@@ -332,7 +332,7 @@ VITE_CONFIG
     # Move temp file to src/ with sudo and fix ownership
     sudo mv /tmp/vite.config.js.tmp src/vite.config.js
     sudo chown ${CURRENT_USER}:${CURRENT_GROUP} src/vite.config.js
-    chmod 644 src/vite.config.js
+    sudo chmod 644 src/vite.config.js
 
     echo -e "${GREEN}✓ vite.config.js configured for HTTPS and HMR${NC}"
 
