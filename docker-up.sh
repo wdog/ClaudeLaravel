@@ -35,11 +35,9 @@ APP_ENV=$(grep -E "^APP_ENV=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "pr
 if [ "$APP_ENV" = "local" ] || [ "$APP_ENV" = "dev" ] || [ "$APP_ENV" = "development" ]; then
     BUILD_TARGET="development"
     MODE="Development"
-    EXTRA_PORTS="-p 5173:5173"
 else
     BUILD_TARGET="production"
     MODE="Production"
-    EXTRA_PORTS=""
 fi
 
 echo -e "${GREEN}Detected Environment: ${APP_ENV}${NC}"
@@ -64,14 +62,16 @@ export PGID=$(id -g)
 
 # Parse command line arguments
 BUILD_FLAG=""
-DETACH_FLAG=""
+DETACH_FLAG="-d"  # Detached by default
+FOREGROUND=false
 for arg in "$@"; do
     case $arg in
         --build|-b)
             BUILD_FLAG="--build"
             ;;
-        --detach|-d)
-            DETACH_FLAG="-d"
+        --foreground|-f)
+            DETACH_FLAG=""
+            FOREGROUND=true
             ;;
         *)
             ;;
@@ -97,25 +97,28 @@ fi
 # Run docker-compose with appropriate files
 docker-compose $COMPOSE_FILES up $BUILD_FLAG $DETACH_FLAG
 
-# Show access URLs if not detached
-if [ -z "$DETACH_FLAG" ]; then
-    echo ""
-    echo -e "${GREEN}================================${NC}"
-    echo -e "${GREEN}  Application Started!${NC}"
-    echo -e "${GREEN}================================${NC}"
-    echo ""
-    echo -e "${BLUE}Access your application:${NC}"
-    echo "  HTTPS: https://localhost:8443"
-    echo "  Filament Admin: https://localhost:8443/admin"
-    if [ "$BUILD_TARGET" = "development" ]; then
-        echo "  Vite HMR: http://localhost:5173"
-    fi
-    echo ""
-    echo -e "${BLUE}Useful commands:${NC}"
-    echo "  docker exec -it laravel-app php artisan [command]"
-    echo "  docker exec -it laravel-app composer [command]"
-    if [ "$BUILD_TARGET" = "development" ]; then
-        echo "  docker exec -it laravel-app npm [command]"
-    fi
-    echo ""
+# Show access URLs
+echo ""
+echo -e "${GREEN}================================${NC}"
+echo -e "${GREEN}  Application Started!${NC}"
+echo -e "${GREEN}================================${NC}"
+echo ""
+echo -e "${BLUE}Access your application:${NC}"
+echo "  HTTPS: https://localhost"
+echo "  Filament Admin: https://localhost/admin"
+if [ "$BUILD_TARGET" = "development" ]; then
+    echo "  Vite HMR: http://localhost:5173"
 fi
+echo ""
+echo -e "${BLUE}Useful commands:${NC}"
+echo "  docker exec -it laravel-app php artisan migrate [--force]"
+echo "  docker exec -it laravel-app php artisan [command]"
+echo "  docker exec -it laravel-app composer [command]"
+if [ "$BUILD_TARGET" = "development" ]; then
+    echo "  docker exec -it laravel-app npm [command]"
+fi
+echo ""
+echo -e "${BLUE}View logs:${NC}"
+echo "  docker-compose logs -f"
+echo "  docker logs -f laravel-app"
+echo ""

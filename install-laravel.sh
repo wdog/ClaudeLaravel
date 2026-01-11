@@ -251,7 +251,7 @@ else
     echo -e "${GREEN}✓ Production assets built${NC}"
 fi
 
-# Set proper permissions and ownership using Docker
+# Set proper permissions and ownership
 echo -e "${BLUE}Setting permissions and ownership...${NC}"
 
 # Get current user/group IDs
@@ -262,18 +262,15 @@ CURRENT_GROUP=$(id -g)
 echo -e "${YELLOW}Fixing ownership using Docker (${CURRENT_USER}:${CURRENT_GROUP})...${NC}"
 docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "chown -R ${CURRENT_USER}:${CURRENT_GROUP} /app"
 
-# Set permissions on writable directories for Laravel
-# 775 = rwxrwxr-x (owner and group can write, others can read/execute)
-echo -e "${YELLOW}Setting permissions on storage and cache directories...${NC}"
-docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "chmod -R 775 /app/storage /app/bootstrap/cache"
-
 # Create storage subdirectories if they don't exist
 echo -e "${YELLOW}Ensuring storage directories exist...${NC}"
-docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "
-    mkdir -p /app/storage/framework/{cache,sessions,views,testing}
-    mkdir -p /app/storage/{app,logs}
-    chmod -R 775 /app/storage
-"
+mkdir -p src/storage/framework/{cache,sessions,views,testing}
+mkdir -p src/storage/{app,logs}
+
+# Set permissions with sudo to ensure they work correctly with Docker
+# 777 = rwxrwxrwx (needed for both host user and www-data in container)
+echo -e "${YELLOW}Setting permissions (requires sudo)...${NC}"
+sudo chmod -R 777 src/storage src/bootstrap/cache src/public src
 
 echo -e "${GREEN}✓ Permissions and ownership set${NC}"
 
