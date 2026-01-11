@@ -26,6 +26,9 @@ services:
       # Override database host to use container name
       DB_HOST: mysql
       TZ: Europe/Rome
+      # Map www-data UID/GID to host user (fixes permission issues)
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
 
     volumes:
       # Mount Laravel application

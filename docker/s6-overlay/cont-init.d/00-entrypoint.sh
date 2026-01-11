@@ -24,7 +24,9 @@ echo "Environment detected: ${APP_ENV}"
 # Laravel directories are created by Laravel itself during installation
 # We only ensure proper permissions if Laravel is already installed
 if [ -d /var/www/html/storage ]; then
-    echo "Laravel detected, checking permissions..."
+    echo "Laravel detected, fixing permissions..."
+
+    # Fix ownership for Laravel writable directories
     chown -R www-data:www-data \
         /var/www/html/storage \
         /var/www/html/bootstrap/cache 2>/dev/null || true
@@ -32,6 +34,19 @@ if [ -d /var/www/html/storage ]; then
     chmod -R 775 \
         /var/www/html/storage \
         /var/www/html/bootstrap/cache 2>/dev/null || true
+
+    # Fix public/ directory permissions for Vite hot file
+    # Vite needs to write public/hot during dev mode
+    if [ -d /var/www/html/public ]; then
+        chown www-data:www-data /var/www/html/public 2>/dev/null || true
+        chmod 775 /var/www/html/public 2>/dev/null || true
+    fi
+
+    # Allow www-data to write temporary files in project root (for Vite)
+    # This allows Vite to create .timestamp files during dev mode
+    chmod 775 /var/www/html 2>/dev/null || true
+
+    echo "✓ Permissions fixed"
 else
     echo "Warning: Laravel not found in /var/www/html"
 fi

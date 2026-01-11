@@ -58,6 +58,10 @@ echo "  Username: ${DB_USERNAME}"
 echo "  Password: ${DB_PASSWORD:0:3}***"
 echo ""
 
+# Get current user UID/GID for permission mapping
+export PUID=$(id -u)
+export PGID=$(id -g)
+
 # Parse command line arguments
 BUILD_FLAG=""
 DETACH_FLAG=""
@@ -83,8 +87,15 @@ export DB_PASSWORD
 echo -e "${YELLOW}Starting containers...${NC}"
 echo ""
 
-# Run docker-compose
-docker-compose up $BUILD_FLAG $DETACH_FLAG
+# Determine which compose files to use
+if [ "$APP_ENV" = "local" ]; then
+    COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
+else
+    COMPOSE_FILES="-f docker-compose.yml"
+fi
+
+# Run docker-compose with appropriate files
+docker-compose $COMPOSE_FILES up $BUILD_FLAG $DETACH_FLAG
 
 # Show access URLs if not detached
 if [ -z "$DETACH_FLAG" ]; then

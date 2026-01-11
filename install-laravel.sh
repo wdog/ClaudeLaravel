@@ -73,16 +73,21 @@ if [ "$CLEAN_INSTALL" = true ]; then
     if [ -d "database/data" ]; then
         echo -e "${YELLOW}Removing database/data/ directory...${NC}"
 
-        # Use Docker Alpine to handle MySQL files with correct permissions
+        # Try Docker Alpine first to handle MySQL files with correct permissions
         if [ -n "$(ls -A database/data 2>/dev/null)" ]; then
-            echo -e "${YELLOW}Removing MySQL data using Docker (correct permissions)...${NC}"
-            docker run --rm -v "$(pwd)/database/data:/data" alpine:latest sh -c "rm -rf /data/*"
+            echo -e "${YELLOW}Attempting to remove MySQL data using Docker...${NC}"
+            if docker run --rm -v "$(pwd)/database/data:/data" alpine:latest sh -c "rm -rf /data/*" 2>/dev/null; then
+                echo -e "${GREEN}✓ MySQL data removed via Docker${NC}"
+            else
+                echo -e "${YELLOW}Docker cleanup failed, trying with sudo...${NC}"
+            fi
         fi
 
-        # Fallback to sudo if Docker fails or isn't available
+        # Fallback to sudo if Docker fails or files still exist
         if [ -n "$(ls -A database/data 2>/dev/null)" ]; then
-            echo -e "${YELLOW}Fallback: using sudo to remove remaining files...${NC}"
+            echo -e "${YELLOW}Using sudo to remove MySQL data (requires password)...${NC}"
             sudo rm -rf database/data/*
+            echo -e "${GREEN}✓ MySQL data removed via sudo${NC}"
         fi
 
         echo -e "${GREEN}✓ database/data/ cleaned${NC}"
@@ -108,7 +113,7 @@ fi
 
 # Default configuration
 DB_CONNECTION="mysql"
-DB_HOST="db"
+DB_HOST="mysql"  # MUST be 'mysql' (Docker container name in docker-compose.yml)
 DB_PORT="3306"
 DB_DATABASE="laravel"
 DB_USERNAME="laravel"
@@ -116,27 +121,36 @@ DB_PASSWORD="laravel"
 APP_ENV="local"
 APP_NAME="LaravelApp"
 
-# Interactive configuration
-echo -e "${YELLOW}Configuration (press Enter to use defaults):${NC}"
-echo ""
+# Interactive configuration (skip if --clean flag is used)
+if [ "$CLEAN_INSTALL" = false ]; then
+    echo -e "${YELLOW}Configuration (press Enter to use defaults):${NC}"
+    echo ""
 
-read -p "App Name [${APP_NAME}]: " input
-APP_NAME=${input:-$APP_NAME}
+    read -p "App Name [${APP_NAME}]: " input
+    APP_NAME=${input:-$APP_NAME}
 
-read -p "Environment (local/production) [${APP_ENV}]: " input
-APP_ENV=${input:-$APP_ENV}
+    read -p "Environment (local/production) [${APP_ENV}]: " input
+    APP_ENV=${input:-$APP_ENV}
 
-read -p "Database Host [${DB_HOST}]: " input
-DB_HOST=${input:-$DB_HOST}
+    # DB_HOST is always 'mysql' for Docker - do not ask user
+    echo -e "${CYAN}Database Host: ${DB_HOST} (fixed for Docker)${NC}"
 
-read -p "Database Name [${DB_DATABASE}]: " input
-DB_DATABASE=${input:-$DB_DATABASE}
+    read -p "Database Name [${DB_DATABASE}]: " input
+    DB_DATABASE=${input:-$DB_DATABASE}
 
-read -p "Database User [${DB_USERNAME}]: " input
-DB_USERNAME=${input:-$DB_USERNAME}
+    read -p "Database User [${DB_USERNAME}]: " input
+    DB_USERNAME=${input:-$DB_USERNAME}
 
-read -p "Database Password [${DB_PASSWORD}]: " input
-DB_PASSWORD=${input:-$DB_PASSWORD}
+    read -p "Database Password [${DB_PASSWORD}]: " input
+    DB_PASSWORD=${input:-$DB_PASSWORD}
+else
+    echo -e "${YELLOW}Using default configuration (--clean flag)${NC}"
+    echo "  App Name: ${APP_NAME}"
+    echo "  Environment: ${APP_ENV}"
+    echo "  Database Host: ${DB_HOST} (fixed for Docker)"
+    echo "  Database: ${DB_DATABASE}"
+    echo "  Database User: ${DB_USERNAME}"
+fi
 
 echo ""
 echo -e "${BLUE}Installing Laravel 12...${NC}"
@@ -153,7 +167,7 @@ echo -e "${GREEN}✓ Laravel installed${NC}"
 # Generate APP_KEY if not exists
 if ! grep -q "^APP_KEY=base64:" src/.env; then
     echo -e "${BLUE}Generating APP_KEY...${NC}"
-    docker run --rm -v "$(pwd)/src:/var/www/html" -w /var/www/html php:8.4-cli \
+    docker run --rm -v "$(pwd)/src:/app" -w /app php:8.4-cli \
         php artisan key:generate --ansi
     echo -e "${GREEN}✓ APP_KEY generated${NC}"
 fi
@@ -183,12 +197,13 @@ fi
 echo -e "${GREEN}✓ APP_URL and ASSET_URL set to ${APP_URL}${NC}"
 
 # Update Database configuration
+# Laravel 12 has commented DB_ lines by default, so we need to uncomment and set them
 sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=${DB_CONNECTION}/" src/.env
-sed -i "s/^DB_HOST=.*/DB_HOST=${DB_HOST}/" src/.env
-sed -i "s/^DB_PORT=.*/DB_PORT=${DB_PORT}/" src/.env
-sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE}/" src/.env
-sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME}/" src/.env
-sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" src/.env
+sed -i "s/^# DB_HOST=.*/DB_HOST=${DB_HOST}/" src/.env || sed -i "s/^DB_HOST=.*/DB_HOST=${DB_HOST}/" src/.env
+sed -i "s/^# DB_PORT=.*/DB_PORT=${DB_PORT}/" src/.env || sed -i "s/^DB_PORT=.*/DB_PORT=${DB_PORT}/" src/.env
+sed -i "s/^# DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE}/" src/.env || sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE}/" src/.env
+sed -i "s/^# DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME}/" src/.env || sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME}/" src/.env
+sed -i "s/^# DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" src/.env || sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" src/.env
 
 echo -e "${GREEN}✓ .env configured${NC}"
 
@@ -203,8 +218,8 @@ echo -e "${GREEN}✓ FilamentPHP v4 installed${NC}"
 # Install Filament Panel
 echo -e "${BLUE}Setting up Filament Panel...${NC}"
 
-docker run --rm -v "$(pwd)/src:/var/www/html" -w /var/www/html php:8.4-cli \
-    php artisan filament:install --panels
+docker run --rm -v "$(pwd)/src:/app" -w /app php:8.4-cli \
+    php artisan filament:install --panels --no-interaction
 
 echo -e "${GREEN}✓ Filament Panel configured${NC}"
 
@@ -216,15 +231,49 @@ if [ "$APP_ENV" = "local" ]; then
     echo -e "${GREEN}✓ Laravel Debugbar installed${NC}"
 fi
 
-# Set proper permissions and ownership
-echo -e "${BLUE}Setting permissions and ownership...${NC}"
-chmod -R 775 src/storage src/bootstrap/cache
+# Install NPM dependencies and build assets
+if [ "$APP_ENV" = "local" ]; then
+    # Development: install dependencies only (Vite will run in dev mode)
+    echo -e "${BLUE}Installing NPM dependencies (Vite, etc.)...${NC}"
+    docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
+        npm install
+    echo -e "${GREEN}✓ NPM dependencies installed${NC}"
+else
+    # Production: install dependencies and build assets
+    echo -e "${BLUE}Installing NPM dependencies...${NC}"
+    docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
+        npm install
+    echo -e "${GREEN}✓ NPM dependencies installed${NC}"
 
-# Fix ownership - all files should belong to current user, not root
+    echo -e "${BLUE}Building production assets...${NC}"
+    docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
+        npm run build
+    echo -e "${GREEN}✓ Production assets built${NC}"
+fi
+
+# Set proper permissions and ownership using Docker
+echo -e "${BLUE}Setting permissions and ownership...${NC}"
+
+# Get current user/group IDs
 CURRENT_USER=$(id -u)
 CURRENT_GROUP=$(id -g)
-echo "Changing ownership from root to ${CURRENT_USER}:${CURRENT_GROUP}..."
-sudo chown -R ${CURRENT_USER}:${CURRENT_GROUP} src/
+
+# Use Docker to fix ownership (avoids sudo for most files)
+echo -e "${YELLOW}Fixing ownership using Docker (${CURRENT_USER}:${CURRENT_GROUP})...${NC}"
+docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "chown -R ${CURRENT_USER}:${CURRENT_GROUP} /app"
+
+# Set permissions on writable directories for Laravel
+# 775 = rwxrwxr-x (owner and group can write, others can read/execute)
+echo -e "${YELLOW}Setting permissions on storage and cache directories...${NC}"
+docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "chmod -R 775 /app/storage /app/bootstrap/cache"
+
+# Create storage subdirectories if they don't exist
+echo -e "${YELLOW}Ensuring storage directories exist...${NC}"
+docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "
+    mkdir -p /app/storage/framework/{cache,sessions,views,testing}
+    mkdir -p /app/storage/{app,logs}
+    chmod -R 775 /app/storage
+"
 
 echo -e "${GREEN}✓ Permissions and ownership set${NC}"
 
@@ -252,7 +301,7 @@ EOF
 fi
 
 # Create database/data directory
-mkdir -p database/data
+mkdir -p database/{data,config}
 touch database/data/.gitkeep
 
 # Create database/config directory with my.cnf if not exists
@@ -318,5 +367,9 @@ echo -e "     ${YELLOW}docker exec -it laravel-app php artisan make:filament-use
 echo ""
 echo -e "${CYAN}Tip:${NC} To reinstall from scratch, use:"
 echo -e "     ${YELLOW}./install-laravel.sh --clean${NC}"
+echo ""
+echo -e "${CYAN}Fix storage permissions if needed:${NC}"
+echo -e "     ${YELLOW}docker exec -it laravel-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache${NC}"
+echo -e "     ${YELLOW}docker exec -it laravel-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache${NC}"
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
