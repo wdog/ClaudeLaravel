@@ -31,6 +31,11 @@ RUN apk add --no-cache \
     libxml2-dev \
     curl-dev \
     mysql-client \
+    # Build dependencies for PECL (will be removed later)
+    && apk add --no-cache --virtual .build-deps \
+        autoconf \
+        g++ \
+        make \
     && docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
@@ -47,6 +52,7 @@ RUN apk add --no-cache \
         opcache \
     && pecl install apcu \
     && docker-php-ext-enable apcu \
+    && apk del .build-deps \
     && rm -rf /tmp/pear
 
 # Install s6-overlay for process supervision
@@ -54,10 +60,7 @@ ARG S6_OVERLAY_VERSION=3.1.6.2
 RUN curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz" | tar -C / -Jxpf - \
     && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz" | tar -C / -Jxpf -
 
-# Create www-data user with proper permissions
-RUN set -x \
-    && addgroup -g 82 -S www-data \
-    && adduser -u 82 -D -S -G www-data www-data
+# Note: www-data user/group already exist in php:8.4-fpm-alpine (uid/gid 82)
 
 # Copy PHP configurations
 COPY docker/php/php.ini /usr/local/etc/php/php.ini
@@ -68,9 +71,14 @@ COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/laravel.conf /etc/nginx/http.d/default.conf
 
+# Copy s6-overlay service definitions
+COPY docker/s6-overlay/ /etc/s6-overlay/
+
 # Copy scripts
 COPY docker/scripts/ /docker/scripts/
-RUN chmod +x /docker/scripts/*.sh
+RUN chmod +x /docker/scripts/*.sh \
+    && chmod +x /etc/s6-overlay/s6-rc.d/*/run \
+    && chmod +x /etc/s6-overlay/cont-init.d/*.sh
 
 # Generate self-signed SSL certificate (10 years validity)
 RUN /docker/scripts/generate-ssl-cert.sh
@@ -79,9 +87,16 @@ RUN /docker/scripts/generate-ssl-cert.sh
 RUN mkdir -p \
     /var/run/php \
     /etc/nginx/ssl \
+    /var/lib/nginx/tmp/client_body \
+    /var/lib/nginx/tmp/proxy \
+    /var/lib/nginx/tmp/fastcgi \
+    /var/lib/nginx/tmp/uwsgi \
+    /var/lib/nginx/tmp/scgi \
+    /var/lib/nginx/logs \
     && chown -R www-data:www-data \
         /var/run/php \
-        /etc/nginx/ssl
+        /etc/nginx/ssl \
+        /var/lib/nginx
 
 # Expose HTTPS port 443
 EXPOSE 443

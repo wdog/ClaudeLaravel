@@ -1,0 +1,74 @@
+# ============================================================================
+# Docker Compose - Development Overrides
+# Extends docker-compose.yml with development-specific settings
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# ============================================================================
+
+services:
+  # ============================================================================
+  # Laravel Application - Development Mode
+  # ============================================================================
+  app:
+    build:
+      # Override target to use development stage
+      target: development
+
+    # Development image tag
+    image: laravel-app:development
+
+    # Development environment variables
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      VITE_DEV_SERVER_ENABLED: "true"
+
+      # Laravel development settings
+      LOG_LEVEL: debug
+      LOG_CHANNEL: stderr
+
+      # Cache/Session drivers for development (use file/sync for simplicity)
+      CACHE_DRIVER: file
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
+
+    # Expose additional ports for development
+    ports:
+      - "8443:443"    # HTTPS - mapped to 8443 to avoid conflicts
+      - "5173:5173"   # Vite HMR dev server
+
+    # Mount source code as volume for live editing
+    volumes:
+      - ./src:/var/www/html
+      # Optional: mount composer cache for faster installs
+      # - ~/.composer:/tmp/composer-cache
+
+    # Development doesn't need restart policy (for debugging)
+    restart: "no"
+
+  # ============================================================================
+  # MySQL - Development Overrides
+  # ============================================================================
+  mysql:
+    # Expose MySQL port for external tools (TablePlus, DBeaver, etc.)
+    ports:
+      - "3306:3306"
+
+    # Development doesn't need restart policy
+    restart: "no"
+
+    # Optional: enable general query log for debugging
+    # command:
+    #   - --general-log=1
+    #   - --general-log-file=/var/lib/mysql/general.log
+
+  # ============================================================================
+  # Redis (Optional) - Uncomment if needed for development
+  # ============================================================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: laravel-redis
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - laravel-network
+  #   restart: "no"

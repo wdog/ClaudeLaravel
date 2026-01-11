@@ -1,0 +1,5 @@
+#!/command/execlineb -P
+# Vite Dev Server - Hot Module Replacement for development
+# Only active in development mode (APP_ENV=local)
+cd /var/www/html
+/usr/bin/npm run dev

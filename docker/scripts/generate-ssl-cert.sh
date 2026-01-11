@@ -35,8 +35,8 @@ if [ -n "$LAN_IP" ] && [ "$LAN_IP" != "127.0.0.1" ]; then
     echo "Adding LAN IP to certificate: ${LAN_IP}"
 fi
 
-# Add common private network ranges
-SAN="${SAN},IP:192.168.0.0/16,IP:172.16.0.0/12,IP:10.0.0.0/8"
+# Note: Cannot add IP ranges (CIDR notation) to SSL certificates
+# Each IP must be added individually if needed
 
 # Generate self-signed certificate
 echo "Generating certificate valid for ${DAYS_VALID} days (10 years)..."

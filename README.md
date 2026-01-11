@@ -1,6 +1,8 @@
 # Laravel Docker Project with FilamentPHP
 
-Docker-based Laravel development environment with PHP 8.4 Alpine FPM, Nginx, MySQL, and FilamentPHP v4 support.
+Docker-based Laravel development environment with PHP 8.4 Alpine FPM, Nginx HTTPS, MySQL, and FilamentPHP v4 support.
+
+**Key Feature**: Automatically detects development/production mode from `src/.env` file!
 
 ## 🚀 Quick Start
 
@@ -10,17 +12,8 @@ Docker-based Laravel development environment with PHP 8.4 Alpine FPM, Nginx, MyS
 # Run the installation script
 ./install-laravel.sh
 
-# Build and start containers
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
-
-Access your application:
-- **App**: `https://localhost:8443`
-- **Filament Admin**: `https://localhost:8443/admin`
-
-Create Filament admin user:
-```bash
-docker exec -it laravel-app php artisan make:filament-user
+# Start containers (auto-detects mode from src/.env)
+./docker-up.sh --build
 ```
 
 ### Option 2: Existing Laravel Project
@@ -29,114 +22,168 @@ docker exec -it laravel-app php artisan make:filament-user
 # Clone your Laravel project
 git clone https://github.com/your/project.git src/
 
-# Copy and configure .env
-cp src/.env.example src/.env
-# Edit src/.env with your settings
+# Ensure src/.env is configured:
+# - DB_HOST=mysql
+# - DB_DATABASE=your_db
+# - DB_USERNAME=your_user
+# - DB_PASSWORD=your_password
+# - APP_ENV=local (for development) or production
 
-# Build and start containers
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Start containers
+./docker-up.sh --build
 ```
 
-## 📋 Features
+## 📋 How It Works
 
-- **PHP 8.4** FPM Alpine
-- **Nginx** with HTTPS (self-signed certificate, 10 years validity)
-- **MySQL 8.0** with persistent data
-- **Redis** (optional)
-- **FilamentPHP v4** ready
-- **Vite** HMR support in development
-- **s6-overlay** for process supervision
-- **Auto-detection** of environment from `src/.env`
+The system reads ALL configuration from `src/.env` (Laravel's .env file):
+
+1. **Environment Detection**:
+   - `APP_ENV=local` → Builds **development** image (with Node.js, Composer, Vite HMR)
+   - `APP_ENV=production` → Builds **production** image (optimized, OPcache, no dev tools)
+
+2. **Database Configuration**:
+   - Reads `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` from `src/.env`
+   - Automatically configures MySQL container with those credentials
+
+3. **No Duplicate Configuration**:
+   - Single source of truth: `src/.env`
+   - No need for separate Docker `.env` file
 
 ## 🔐 HTTPS Access
 
-The container generates a self-signed SSL certificate automatically.
+The container generates a self-signed SSL certificate automatically (valid 10 years).
 
 **Access from**:
 - Localhost: `https://localhost:8443`
-- LAN IP: `https://192.168.x.x:8443` (use your local IP)
+- LAN: `https://192.168.x.x:8443` (use your local IP)
+- Filament Admin: `https://localhost:8443/admin`
 
 **Certificate includes**:
 - localhost, *.localhost
 - 127.0.0.1
 - Your LAN IP (auto-detected)
-- Private network ranges (192.168.x.x, 172.16.x.x, 10.x.x.x)
+- Private network ranges
 
 ## 📁 Project Structure
 
 ```
 ClaudeLaravel/
-├── src/                    # Laravel application (git clone here)
-│   ├── .env               # Configure APP_ENV=local or production
-│   └── ...
+├── src/                    # Laravel application
+│   └── .env               # ⭐ SINGLE SOURCE OF TRUTH
 ├── docker/                 # Docker configurations
-│   ├── Dockerfile
-│   ├── php/
-│   ├── nginx/
-│   └── scripts/
 ├── database/
-│   ├── data/              # MySQL data (auto-created, gitignored)
-│   └── config/
-│       └── my.cnf         # MySQL configuration
-├── docker-compose.yml      # Production config
-├── docker-compose.dev.yml  # Development overrides
+│   ├── data/              # MySQL data (gitignored)
+│   └── config/my.cnf      # MySQL configuration
+├── docker-compose.yml      # Reads from src/.env
+├── docker-up.sh           # Smart wrapper script
 └── install-laravel.sh      # Installation script
 ```
 
-## 🎯 Environment Detection
+## 🛠️ Usage
 
-The container automatically detects the environment from `src/.env`:
-- `APP_ENV=local` → Development Mode
-- `APP_ENV=production` → Production Mode
+### Starting Containers
 
-**Development Mode**:
-- Vite HMR enabled
-- Debug enabled
-- OPcache revalidation on
-
-**Production Mode**:
-- Assets precompiled
-- Debug disabled
-- OPcache optimized
-
-## 🛠️ Common Commands
-
-### Start Development
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# First time (build required)
+./docker-up.sh --build
+
+# Subsequent starts
+./docker-up.sh
+
+# Detached mode (background)
+./docker-up.sh --detach
+
+# With build and detached
+./docker-up.sh --build --detach
 ```
 
-### Start Production
-```bash
-docker-compose up -d
-```
+### Common Commands
 
-### Run Artisan Commands
 ```bash
+# Artisan commands
 docker exec -it laravel-app php artisan migrate
 docker exec -it laravel-app php artisan make:model Post
-```
 
-### Run Composer
-```bash
+# Composer
 docker exec -it laravel-app composer require package/name
-```
 
-### Run NPM (in development)
-```bash
+# NPM (development mode only)
 docker exec -it laravel-app npm install
 docker exec -it laravel-app npm run dev
-```
 
-### View Logs
-```bash
-docker-compose logs -f app
-```
+# Create Filament admin user
+docker exec -it laravel-app php artisan make:filament-user
 
-### Access Container Shell
-```bash
+# Access container shell
 docker exec -it laravel-app bash
+
+# View logs
+docker-compose logs -f app
+docker-compose logs -f mysql
+
+# Stop containers
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
 ```
+
+## ⚙️ Configuration
+
+### src/.env (Laravel Configuration)
+
+This is the ONLY file you need to configure:
+
+```env
+APP_ENV=local              # local/production (determines build target)
+APP_DEBUG=true             # true for dev, false for prod
+APP_URL=https://localhost:8443
+
+DB_CONNECTION=mysql
+DB_HOST=mysql              # Container name (DO NOT change)
+DB_PORT=3306
+DB_DATABASE=laravel        # Your database name
+DB_USERNAME=laravel        # Your database user
+DB_PASSWORD=laravel        # Your database password
+```
+
+### Development vs Production
+
+**Development** (`APP_ENV=local`):
+- Vite HMR enabled (port 5173)
+- Laravel Debugbar included
+- Node.js and Composer available
+- OPcache revalidation enabled
+- Display errors enabled
+
+**Production** (`APP_ENV=production`):
+- Assets precompiled
+- OPcache optimized
+- No debug tools
+- Smaller image size
+- Display errors disabled
+
+## 📦 What's Included
+
+### PHP Extensions
+- opcache, pdo, pdo_mysql
+- mbstring, xml, bcmath, curl
+- gd, zip, intl, apcu
+
+### Development Tools (local mode only)
+- Laravel 12
+- FilamentPHP v4
+- Laravel Debugbar
+- Node.js 20 + npm
+- Composer
+- Vite with HMR
+
+### Production Features
+- PHP 8.4 FPM Alpine (lightweight)
+- Nginx with HTTPS
+- OPcache with JIT
+- s6-overlay process supervision
+- Non-root user (www-data)
 
 ## 🗄️ Database
 
@@ -147,39 +194,28 @@ DB_HOST=mysql
 DB_PORT=3306
 DB_DATABASE=laravel
 DB_USERNAME=laravel
-DB_PASSWORD=secret
+DB_PASSWORD=laravel
 ```
 
-**Data Location**: `database/data/` (gitignored)
+**Data Location**: `database/data/` (gitignored, persistent)
 
 **MySQL Configuration**: `database/config/my.cnf`
 
-### Reset Database
+### Access Database from Host
+
 ```bash
-# Stop containers
-docker-compose down
-
-# Remove data
-rm -rf database/data/*
-
-# Restart
-docker-compose up
+# MySQL is exposed on port 3306
+mysql -h 127.0.0.1 -P 3306 -u laravel -p
+# Password: laravel (or your configured password)
 ```
 
-## 📦 What's Included
+### Reset Database
 
-### PHP Extensions
-- opcache, pdo, pdo_mysql
-- mbstring, xml, bcmath, curl
-- gd, zip, intl
-- apcu
-- redis (optional)
-
-### Tools
-- Composer
-- Node.js 20 (development)
-- npm
-- Git
+```bash
+docker-compose down
+rm -rf database/data/*
+./docker-up.sh --build
+```
 
 ## 🔧 Customization
 
@@ -192,11 +228,20 @@ Edit `docker/nginx/laravel.conf`
 ### Change MySQL Settings
 Edit `database/config/my.cnf`
 
-## 📚 Documentation
-
-See `DOCKER_PROJECT_PLAN.md` for complete documentation.
+### Add Redis (Optional)
+Uncomment Redis service in `docker-compose.yml` and configure in `src/.env`:
+```env
+REDIS_HOST=redis
+REDIS_PORT=6379
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+```
 
 ## 🆘 Troubleshooting
+
+### Certificate Warning in Browser
+Normal for self-signed certificates. Click "Advanced" → "Proceed to localhost".
 
 ### Permission Issues
 ```bash
@@ -204,14 +249,82 @@ docker exec -it laravel-app chown -R www-data:www-data /var/www/html/storage /va
 docker exec -it laravel-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 ```
 
-### Certificate Warning in Browser
-This is normal for self-signed certificates. Click "Advanced" → "Proceed to localhost" (or your IP).
-
 ### Database Connection Error
-Make sure MySQL container is running and healthy:
+1. Check `src/.env` has `DB_HOST=mysql` (not localhost)
+2. Ensure MySQL container is healthy: `docker-compose ps`
+3. Check logs: `docker-compose logs mysql`
+
+### Wrong Build Target
+The script reads `APP_ENV` from `src/.env`:
+- Check: `grep APP_ENV src/.env`
+- Should be `local` for development or `production` for prod
+- Rebuild: `./docker-up.sh --build`
+
+### Port Already in Use
 ```bash
-docker-compose ps
-docker-compose logs mysql
+# Check what's using port 8443
+lsof -i :8443
+
+# Or change port in docker-compose.yml
+ports:
+  - "9443:443"  # Use port 9443 instead
+```
+
+## 📚 Documentation
+
+See `DOCKER_PROJECT_PLAN.md` for complete documentation and architecture details.
+
+## 🎯 Workflow Examples
+
+### New Feature Development
+```bash
+# 1. Ensure development mode
+echo "APP_ENV=local" >> src/.env
+
+# 2. Start containers
+./docker-up.sh --build
+
+# 3. Install dependencies
+docker exec -it laravel-app composer require some/package
+
+# 4. Run migrations
+docker exec -it laravel-app php artisan migrate
+
+# 5. Access app
+open https://localhost:8443
+```
+
+### Deploy to Production
+```bash
+# 1. Update environment
+sed -i 's/APP_ENV=local/APP_ENV=production/' src/.env
+sed -i 's/APP_DEBUG=true/APP_DEBUG=false/' src/.env
+
+# 2. Build production image
+./docker-up.sh --build
+
+# 3. Application is optimized automatically
+```
+
+### Clone Existing Project
+```bash
+# 1. Clone repository
+git clone https://your-repo.git src/
+
+# 2. Copy and configure .env
+cp src/.env.example src/.env
+# Edit src/.env:
+#   - Set APP_ENV=local
+#   - Configure DB_* variables
+#   - Set DB_HOST=mysql
+
+# 3. Start containers
+./docker-up.sh --build
+
+# 4. Install dependencies and migrate
+docker exec -it laravel-app composer install
+docker exec -it laravel-app php artisan key:generate
+docker exec -it laravel-app php artisan migrate
 ```
 
 ## 📄 License
@@ -220,4 +333,4 @@ This Docker setup is open-source. Your Laravel application follows its own licen
 
 ## 🤝 Contributing
 
-Feel free to submit issues and enhancement requests!
+Issues and enhancement requests are welcome!

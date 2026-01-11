@@ -480,7 +480,6 @@ services:
       - ./database/config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro  # Configurazione custom
     networks:
       - laravel-network
-    command: --default-authentication-plugin=mysql_native_password
 
   # Redis (OPZIONALE - decommenta se necessario)
   # redis:

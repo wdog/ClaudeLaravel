@@ -1,0 +1,96 @@
+# ============================================================================
+# Docker Compose - Base Configuration
+# Reads configuration from src/.env (Laravel's .env file)
+# Use: docker-compose up  OR  ./docker-up.sh (auto-detects dev/prod)
+# ============================================================================
+
+services:
+  # ============================================================================
+  # Laravel Application Container
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      # target will be set by docker-up.sh based on APP_ENV in src/.env
+      target: ${BUILD_TARGET:-production}
+    image: laravel-app:${BUILD_TARGET:-production}
+    container_name: laravel-app
+    restart: unless-stopped
+
+    # Load environment from Laravel's .env file
+    env_file:
+      - ./src/.env
+
+    environment:
+      # Override database host to use container name
+      DB_HOST: mysql
+      TZ: Europe/Rome
+
+    volumes:
+      # Mount Laravel application
+      - ./src:/var/www/html
+
+    ports:
+      - "443:443"
+
+    networks:
+      - laravel-network
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "/docker/scripts/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # ============================================================================
+  # MySQL Database
+  # ============================================================================
+  mysql:
+    image: mysql:8.4
+    container_name: laravel-mysql
+    restart: unless-stopped
+
+    # Read database credentials from Laravel's .env
+    env_file:
+      - ./src/.env
+
+    environment:
+      # Map Laravel env vars to MySQL env vars
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-laravel}
+      TZ: Europe/Rome
+
+    volumes:
+      # Persistent data storage
+      - ./database/data:/var/lib/mysql
+      # Custom MySQL configuration
+      - ./database/config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+
+    ports:
+      - "3306:3306"
+
+    networks:
+      - laravel-network
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-secret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  laravel-network:
+    driver: bridge
+    name: laravel-network

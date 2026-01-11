@@ -29,7 +29,7 @@ fi
 
 # Default configuration
 DB_CONNECTION="mysql"
-DB_HOST="mysql"
+DB_HOST="db"
 DB_PORT="3306"
 DB_DATABASE="laravel"
 DB_USERNAME="laravel"
@@ -105,7 +105,7 @@ echo -e "${GREEN}✓ .env configured${NC}"
 echo -e "${BLUE}Installing FilamentPHP v4...${NC}"
 
 docker run --rm -v "$(pwd)/src:/app" -w /app composer:latest \
-    require filament/filament:"^4.0" -W
+    require filament/filament:"^4.0" -W --ignore-platform-reqs
 
 echo -e "${GREEN}✓ FilamentPHP v4 installed${NC}"
 
@@ -117,10 +117,25 @@ docker run --rm -v "$(pwd)/src:/var/www/html" -w /var/www/html php:8.4-cli \
 
 echo -e "${GREEN}✓ Filament Panel configured${NC}"
 
-# Set proper permissions
-echo -e "${BLUE}Setting permissions...${NC}"
+# Install Laravel Debugbar if APP_ENV=local
+if [ "$APP_ENV" = "local" ]; then
+    echo -e "${BLUE}Installing Laravel Debugbar (development)...${NC}"
+    docker run --rm -v "$(pwd)/src:/app" -w /app composer:latest \
+        require barryvdh/laravel-debugbar --dev --ignore-platform-reqs
+    echo -e "${GREEN}✓ Laravel Debugbar installed${NC}"
+fi
+
+# Set proper permissions and ownership
+echo -e "${BLUE}Setting permissions and ownership...${NC}"
 chmod -R 775 src/storage src/bootstrap/cache
-echo -e "${GREEN}✓ Permissions set${NC}"
+
+# Fix ownership - all files should belong to current user, not root
+CURRENT_USER=$(id -u)
+CURRENT_GROUP=$(id -g)
+echo "Changing ownership from root to ${CURRENT_USER}:${CURRENT_GROUP}..."
+sudo chown -R ${CURRENT_USER}:${CURRENT_GROUP} src/
+
+echo -e "${GREEN}✓ Permissions and ownership set${NC}"
 
 # Create .gitignore for database/data if not exists
 if [ ! -f ".gitignore" ]; then

@@ -1,0 +1,110 @@
+#!/bin/bash
+# ============================================================================
+# Docker Compose Wrapper - Auto-detects dev/prod from src/.env
+# ============================================================================
+
+set -e
+
+# Colors
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+echo -e "${BLUE}================================${NC}"
+echo -e "${BLUE}  Laravel Docker Startup${NC}"
+echo -e "${BLUE}================================${NC}"
+echo ""
+
+# Check if src/.env exists
+if [ ! -f "src/.env" ]; then
+    echo -e "${RED}ERROR: src/.env not found!${NC}"
+    echo ""
+    echo "Please either:"
+    echo "  1. Run ./install-laravel.sh to create a new project"
+    echo "  2. Clone your Laravel project into src/ directory"
+    echo ""
+    exit 1
+fi
+
+# Read APP_ENV from src/.env
+APP_ENV=$(grep -E "^APP_ENV=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "production")
+
+# Determine build target
+if [ "$APP_ENV" = "local" ] || [ "$APP_ENV" = "dev" ] || [ "$APP_ENV" = "development" ]; then
+    BUILD_TARGET="development"
+    MODE="Development"
+    EXTRA_PORTS="-p 5173:5173"
+else
+    BUILD_TARGET="production"
+    MODE="Production"
+    EXTRA_PORTS=""
+fi
+
+echo -e "${GREEN}Detected Environment: ${APP_ENV}${NC}"
+echo -e "${GREEN}Build Target: ${BUILD_TARGET}${NC}"
+echo -e "${GREEN}Mode: ${MODE}${NC}"
+echo ""
+
+# Read database config from src/.env
+DB_DATABASE=$(grep -E "^DB_DATABASE=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "laravel")
+DB_USERNAME=$(grep -E "^DB_USERNAME=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "laravel")
+DB_PASSWORD=$(grep -E "^DB_PASSWORD=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "secret")
+
+echo -e "${BLUE}Database Configuration:${NC}"
+echo "  Database: ${DB_DATABASE}"
+echo "  Username: ${DB_USERNAME}"
+echo "  Password: ${DB_PASSWORD:0:3}***"
+echo ""
+
+# Parse command line arguments
+BUILD_FLAG=""
+DETACH_FLAG=""
+for arg in "$@"; do
+    case $arg in
+        --build|-b)
+            BUILD_FLAG="--build"
+            ;;
+        --detach|-d)
+            DETACH_FLAG="-d"
+            ;;
+        *)
+            ;;
+    esac
+done
+
+# Export variables for docker-compose
+export BUILD_TARGET
+export DB_DATABASE
+export DB_USERNAME
+export DB_PASSWORD
+
+echo -e "${YELLOW}Starting containers...${NC}"
+echo ""
+
+# Run docker-compose
+docker-compose up $BUILD_FLAG $DETACH_FLAG
+
+# Show access URLs if not detached
+if [ -z "$DETACH_FLAG" ]; then
+    echo ""
+    echo -e "${GREEN}================================${NC}"
+    echo -e "${GREEN}  Application Started!${NC}"
+    echo -e "${GREEN}================================${NC}"
+    echo ""
+    echo -e "${BLUE}Access your application:${NC}"
+    echo "  HTTPS: https://localhost:8443"
+    echo "  Filament Admin: https://localhost:8443/admin"
+    if [ "$BUILD_TARGET" = "development" ]; then
+        echo "  Vite HMR: http://localhost:5173"
+    fi
+    echo ""
+    echo -e "${BLUE}Useful commands:${NC}"
+    echo "  docker exec -it laravel-app php artisan [command]"
+    echo "  docker exec -it laravel-app composer [command]"
+    if [ "$BUILD_TARGET" = "development" ]; then
+        echo "  docker exec -it laravel-app npm [command]"
+    fi
+    echo ""
+fi
