@@ -52,12 +52,12 @@ if [ "$CLEAN_INSTALL" = true ]; then
     echo ""
     echo -e "${RED}WARNING: This action is IRREVERSIBLE!${NC}"
     echo ""
-    read -p "Are you sure you want to proceed? (yes/no): " confirmation
+    # read -p "Are you sure you want to proceed? (yes/no): " confirmation
 
-    if [ "$confirmation" != "yes" ]; then
-        echo -e "${CYAN}Installation cancelled.${NC}"
-        exit 0
-    fi
+    # if [ "$confirmation" != "yes" ]; then
+    #     echo -e "${CYAN}Installation cancelled.${NC}"
+    #     exit 0
+    # fi
 
     echo ""
     echo -e "${BLUE}Removing existing installation...${NC}"
@@ -376,7 +376,8 @@ mkdir -p src/storage/{app,logs}
 # Set permissions with sudo to ensure they work correctly with Docker
 # 777 = rwxrwxrwx (needed for both host user and www-data in container)
 echo -e "${YELLOW}Setting permissions (requires sudo)...${NC}"
-sudo chmod -R 777 src/storage src/bootstrap/cache src/public src
+sudo chmod -R 775 src
+sudo chmod -R 777 src/storage src/bootstrap/cache src/public
 
 echo -e "${GREEN}✓ Permissions and ownership set${NC}"
 
@@ -473,6 +474,7 @@ echo -e "     ${YELLOW}./install-laravel.sh --clean${NC}"
 echo ""
 echo -e "${CYAN}Fix storage permissions if needed:${NC}"
 echo -e "     ${YELLOW}docker exec -it laravel-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache${NC}"
-echo -e "     ${YELLOW}docker exec -it laravel-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache${NC}"
+sudo chmod -R 775 ap/cache${NC}"
+echo -e "     ${YELLOW}docker exec -it laravel-app chmod -R 775 /var/www/html/storage /var/www/html/bootstr
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
