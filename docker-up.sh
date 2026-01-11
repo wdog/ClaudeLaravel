@@ -17,6 +17,16 @@ echo -e "${BLUE}  Laravel Docker Startup${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 
+# Stop running containers before starting
+if [ -f "docker-compose.yml" ]; then
+    if docker-compose ps --services --filter "status=running" 2>/dev/null | grep -q .; then
+        echo -e "${YELLOW}Stopping running containers...${NC}"
+        docker-compose down 2>/dev/null || true
+        echo -e "${GREEN}✓ Containers stopped${NC}"
+        echo ""
+    fi
+fi
+
 # Check if src/.env exists
 if [ ! -f "src/.env" ]; then
     echo -e "${RED}ERROR: src/.env not found!${NC}"
