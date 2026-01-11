@@ -67,6 +67,39 @@ git clone https://github.com/your/project.git src/
 docker exec -it laravel-app php artisan migrate --force
 ```
 
+## 🔄 Switching Between Environments
+
+Use the helper script to easily switch between local and production:
+
+```bash
+# Interactive mode - prompts for environment choice
+./switch-env.sh
+
+# Direct mode - specify environment
+./switch-env.sh local        # Switch to development
+./switch-env.sh production   # Switch to production
+```
+
+**What it does**:
+1. Updates `src/.env` (APP_ENV and APP_DEBUG)
+2. Builds production assets if switching to production
+3. Rebuilds and restarts containers automatically
+4. Shows available features for selected mode
+
+**Manual method** (if you prefer):
+```bash
+# Switch to production
+sed -i 's/^APP_ENV=.*/APP_ENV=production/' src/.env
+sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' src/.env
+docker run --rm -v $(pwd)/src:/app -w /app node:20-alpine npm run build
+./docker-up.sh --build
+
+# Switch to local
+sed -i 's/^APP_ENV=.*/APP_ENV=local/' src/.env
+sed -i 's/^APP_DEBUG=.*/APP_DEBUG=true/' src/.env
+./docker-up.sh --build
+```
+
 ## 📋 How It Works
 
 The system reads ALL configuration from `src/.env` (Laravel's .env file):
