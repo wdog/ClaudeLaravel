@@ -2,6 +2,10 @@
 # ============================================================================
 # Laravel 12 + FilamentPHP v4 Installation Script
 # Creates a new Laravel project in src/ with FilamentPHP and proper configuration
+#
+# Usage:
+#   ./install-laravel.sh           # Normal installation (fails if src/ exists)
+#   ./install-laravel.sh --clean   # Clean install (removes src/ and database/data/)
 # ============================================================================
 
 set -e
@@ -11,7 +15,14 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+
+# Parse command line arguments
+CLEAN_INSTALL=false
+if [ "$1" = "--clean" ] || [ "$1" = "-c" ]; then
+    CLEAN_INSTALL=true
+fi
 
 echo -e "${BLUE}"
 echo "============================================="
@@ -19,11 +30,56 @@ echo "  Laravel 12 + FilamentPHP v4 Installer"
 echo "============================================="
 echo -e "${NC}"
 
+# Clean install option
+if [ "$CLEAN_INSTALL" = true ]; then
+    echo -e "${YELLOW}⚠️  CLEAN INSTALL MODE${NC}"
+    echo ""
+    echo "This will DELETE:"
+    echo "  - src/ (entire Laravel application)"
+    echo "  - database/data/ (all MySQL data)"
+    echo ""
+    echo -e "${RED}WARNING: This action is IRREVERSIBLE!${NC}"
+    echo ""
+    read -p "Are you sure you want to proceed? (yes/no): " confirmation
+
+    if [ "$confirmation" != "yes" ]; then
+        echo -e "${CYAN}Installation cancelled.${NC}"
+        exit 0
+    fi
+
+    echo ""
+    echo -e "${BLUE}Removing existing installation...${NC}"
+
+    # Remove src/ directory
+    if [ -d "src" ]; then
+        echo -e "${YELLOW}Removing src/ directory...${NC}"
+        rm -rf src/
+        echo -e "${GREEN}✓ src/ removed${NC}"
+    fi
+
+    # Remove database data
+    if [ -d "database/data" ]; then
+        echo -e "${YELLOW}Removing database/data/ directory...${NC}"
+        # Try with sudo if regular rm fails (in case of permission issues)
+        if ! rm -rf database/data/* 2>/dev/null; then
+            echo -e "${YELLOW}Permission denied, trying with sudo...${NC}"
+            sudo rm -rf database/data/*
+        fi
+        echo -e "${GREEN}✓ database/data/ cleaned${NC}"
+    fi
+
+    echo -e "${GREEN}✓ Cleanup complete${NC}"
+    echo ""
+fi
+
 # Check if src/ directory already exists with Laravel
 if [ -d "src" ] && [ -f "src/artisan" ]; then
     echo -e "${RED}ERROR: Laravel project already exists in src/${NC}"
-    echo "If you want to reinstall, remove the src/ directory first:"
-    echo "  rm -rf src/"
+    echo ""
+    echo "Options:"
+    echo "  1. Remove manually: rm -rf src/ database/data/*"
+    echo "  2. Run with --clean flag: ./install-laravel.sh --clean"
+    echo ""
     exit 1
 fi
 
@@ -89,13 +145,8 @@ sed -i "s/^APP_NAME=.*/APP_NAME=\"${APP_NAME}\"/" src/.env
 sed -i "s/^APP_ENV=.*/APP_ENV=${APP_ENV}/" src/.env
 
 # Update APP_URL for HTTPS (always use HTTPS with self-signed certificate)
-# Production: https://localhost (or your domain)
-# Development: https://localhost:8443 (mapped port)
-if [ "$APP_ENV" = "local" ]; then
-    APP_URL="https://localhost:8443"
-else
-    APP_URL="https://localhost"
-fi
+# Always use port 443 (standard HTTPS port)
+APP_URL="https://localhost"
 sed -i "s|^APP_URL=.*|APP_URL=${APP_URL}|" src/.env
 
 # Set ASSET_URL to ensure assets are served via HTTPS
@@ -229,17 +280,20 @@ echo "  1. Build and start containers:"
 echo -e "     ${YELLOW}docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build${NC}"
 echo ""
 echo "  2. Access your application:"
-echo -e "     ${YELLOW}https://localhost:8443${NC} (HTTPS - self-signed certificate)"
-echo -e "     ${YELLOW}http://localhost:8080${NC} (HTTP - redirects to HTTPS)"
+echo -e "     ${YELLOW}https://localhost${NC} (HTTPS - self-signed certificate)"
+echo -e "     ${YELLOW}http://localhost${NC} (HTTP - redirects to HTTPS)"
 echo ""
 echo -e "  ${GREEN}Note:${NC} Your browser will show a security warning because we use"
 echo "  a self-signed SSL certificate. This is normal for development."
 echo "  Click 'Advanced' and 'Proceed to localhost' to continue."
 echo ""
 echo "  3. Access Filament Admin Panel:"
-echo -e "     ${YELLOW}https://localhost:8443/admin${NC}"
+echo -e "     ${YELLOW}https://localhost/admin${NC}"
 echo ""
 echo "  4. Create Filament admin user (inside container):"
 echo -e "     ${YELLOW}docker exec -it laravel-app php artisan make:filament-user${NC}"
+echo ""
+echo -e "${CYAN}Tip:${NC} To reinstall from scratch, use:"
+echo -e "     ${YELLOW}./install-laravel.sh --clean${NC}"
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"

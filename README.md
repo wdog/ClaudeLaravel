@@ -12,9 +12,18 @@ Docker-based Laravel development environment with PHP 8.4 Alpine FPM, Nginx HTTP
 # Run the installation script
 ./install-laravel.sh
 
+# Or clean install (removes existing src/ and database/data/)
+./install-laravel.sh --clean
+
 # Start containers (auto-detects mode from src/.env)
 ./docker-up.sh --build
 ```
+
+**Clean Install Option**:
+- `./install-laravel.sh --clean` removes all existing Laravel code and database data
+- Asks for confirmation before deleting
+- Useful for starting completely fresh
+- **WARNING**: Irreversible action!
 
 ### Option 2: Existing Laravel Project
 
@@ -65,15 +74,10 @@ A **self-signed SSL certificate** is automatically generated during build (valid
 
 ### Access URLs
 
-**Development Mode** (`APP_ENV=local`):
-- HTTPS: `https://localhost:8443` ✅ Recommended
-- HTTP: `http://localhost:8080` → Redirects to HTTPS
-- Vite HMR: `http://localhost:5173`
-- Filament Admin: `https://localhost:8443/admin`
-
-**Production Mode** (`APP_ENV=production`):
-- HTTPS: `https://localhost:443` ✅ Recommended
-- HTTP: `http://localhost:80` → Redirects to HTTPS
+**All Modes** (Development & Production use same ports):
+- HTTPS: `https://localhost` ✅ Recommended (port 443)
+- HTTP: `http://localhost` → Redirects to HTTPS (port 80)
+- Vite HMR: `http://localhost:5173` (Development only)
 - Filament Admin: `https://localhost/admin`
 
 ### Browser Security Warning
