@@ -119,6 +119,15 @@ fi
 # Run docker-compose with appropriate files
 docker-compose $COMPOSE_FILES up $BUILD_FLAG $DETACH_FLAG
 
+# Post-startup tasks for production
+if [ "$BUILD_TARGET" = "production" ]; then
+    echo ""
+    echo -e "${YELLOW}Publishing vendor assets for production...${NC}"
+    sleep 3  # Wait for container to be ready
+    docker exec laravel-app php artisan vendor:publish --tag=livewire:assets --force --ansi 2>/dev/null || echo -e "${YELLOW}Note: Run 'docker exec -it laravel-app php artisan vendor:publish --tag=livewire:assets --force' after containers are healthy${NC}"
+    echo -e "${GREEN}✓ Vendor assets published${NC}"
+fi
+
 # Show access URLs
 echo ""
 echo -e "${GREEN}================================${NC}"
