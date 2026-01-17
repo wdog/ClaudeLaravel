@@ -1,5 +1,7 @@
 #!/command/execlineb -P
 # Vite Dev Server - Hot Module Replacement for development
 # Only active in development mode (APP_ENV=local)
+# Run as www-data (which now has host user's UID) to avoid permission issues
+s6-setuidgid www-data
 cd /var/www/html
 /usr/bin/npm run dev

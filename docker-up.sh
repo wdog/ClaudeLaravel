@@ -20,12 +20,14 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --build, -b       Build images only (no start)"
+    echo "  --no-cache, -n    Build images with no cache (no start)"
     echo "  --detach, -d      Start containers in background"
     echo "  --foreground, -f  Start containers in foreground (show logs)"
     echo "  --help, -h        Show this help message"
     echo ""
     echo "Examples:"
     echo "  ./docker-up.sh -b           # Build only"
+    echo "  ./docker-up.sh -n           # Build witch no cache only"
     echo "  ./docker-up.sh -d           # Start detached"
     echo "  ./docker-up.sh -f           # Start in foreground"
     echo "  ./docker-up.sh -bd          # Build then start detached"
@@ -112,11 +114,17 @@ echo ""
 # Parse command line arguments
 DO_BUILD=false
 DO_START=false
+DO_BUILD_NO_CACHE=false
 DETACH_FLAG=""
 for arg in "$@"; do
     case $arg in
         --build|-b)
             DO_BUILD=true
+            DO_BUILD_NO_CACHE=false
+            ;;
+        --no-cache|-n)
+		    DO_BUILD=true
+            DO_BUILD_NO_CACHE=true
             ;;
         --detach|-d)
             DO_START=true
@@ -147,6 +155,13 @@ export DB_DATABASE
 export DB_USERNAME
 export DB_PASSWORD
 
+echo -e "${BLUE}Exported Variables:${NC}"
+echo "  PUID: ${PUID}"
+echo "  PGID: ${PGID}"
+echo "  BUILD_TARGET: ${BUILD_TARGET}"
+echo "  HOST_IP: ${HOST_IP}"
+echo ""
+
 # Determine which compose files to use
 if [ "$APP_ENV" = "local" ]; then
     COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
@@ -157,7 +172,13 @@ fi
 # Build if requested
 if [ "$DO_BUILD" = true ]; then
     echo -e "${YELLOW}Building images...${NC}"
-    docker-compose $COMPOSE_FILES build
+    if [ "$DO_BUILD_NO_CACHE" = true ]; then
+        echo -e "${BLUE}> docker-compose $COMPOSE_FILES build --no-cache${NC}"
+        docker-compose $COMPOSE_FILES build --no-cache
+    else
+        echo -e "${BLUE}> docker-compose $COMPOSE_FILES build${NC}"
+        docker-compose $COMPOSE_FILES build
+    fi
     echo -e "${GREEN}✓ Build complete${NC}"
     echo ""
 fi
@@ -167,11 +188,13 @@ if [ "$DO_START" = true ]; then
     # Stop running containers before starting
     if docker-compose ps --services --filter "status=running" 2>/dev/null | grep -q .; then
         echo -e "${YELLOW}Stopping running containers...${NC}"
+        echo -e "${BLUE}> docker-compose down${NC}"
         docker-compose down 2>/dev/null || true
         echo -e "${GREEN}✓ Containers stopped${NC}"
         echo ""
     fi
     echo -e "${YELLOW}Starting containers...${NC}"
+    echo -e "${BLUE}> docker-compose $COMPOSE_FILES up $DETACH_FLAG${NC}"
     docker-compose $COMPOSE_FILES up $DETACH_FLAG
 fi
 

@@ -15,6 +15,7 @@ WORKDIR /var/www/html
 RUN apk add --no-cache \
     # System utilities
     bash \
+    shadow \
     curl \
     git \
     nginx \
@@ -33,23 +34,23 @@ RUN apk add --no-cache \
     mysql-client \
     # Build dependencies for PECL (will be removed later)
     && apk add --no-cache --virtual .build-deps \
-        autoconf \
-        g++ \
-        make \
+    autoconf \
+    g++ \
+    make \
     && docker-php-ext-configure gd \
-        --with-freetype \
-        --with-jpeg \
+    --with-freetype \
+    --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-        pdo \
-        pdo_mysql \
-        mbstring \
-        xml \
-        bcmath \
-        curl \
-        gd \
-        zip \
-        intl \
-        opcache \
+    pdo \
+    pdo_mysql \
+    mbstring \
+    xml \
+    bcmath \
+    curl \
+    gd \
+    zip \
+    intl \
+    opcache \
     && pecl install apcu \
     && docker-php-ext-enable apcu \
     && apk del .build-deps \
@@ -77,8 +78,8 @@ COPY docker/s6-overlay/ /etc/s6-overlay/
 # Copy scripts
 COPY docker/scripts/ /docker/scripts/
 RUN chmod +x /docker/scripts/*.sh \
-    && chmod +x /etc/s6-overlay/s6-rc.d/*/run \
-    && chmod +x /etc/s6-overlay/cont-init.d/*.sh
+    && chmod +x /etc/s6-overlay/s6-rc.d/*/run 2>/dev/null || true \
+    && chmod +x /etc/s6-overlay/scripts/*.sh 2>/dev/null || true
 
 # Generate self-signed SSL certificate (10 years validity)
 RUN /docker/scripts/generate-ssl-cert.sh
@@ -94,9 +95,9 @@ RUN mkdir -p \
     /var/lib/nginx/tmp/scgi \
     /var/lib/nginx/logs \
     && chown -R www-data:www-data \
-        /var/run/php \
-        /etc/nginx/ssl \
-        /var/lib/nginx
+    /var/run/php \
+    /etc/nginx/ssl \
+    /var/lib/nginx
 
 # Expose HTTP and HTTPS ports
 EXPOSE 80 443
@@ -131,7 +132,7 @@ RUN composer dump-autoload --optimize --classmap-authoritative
 # ============================================================================
 # Stage 3: Node/NPM Build
 # ============================================================================
-FROM node:20-alpine AS node
+FROM node:current-alpine AS node
 
 WORKDIR /app
 
@@ -165,8 +166,9 @@ FROM base AS production
 ENV APP_ENV=production \
     APP_DEBUG=false
 
-# Switch to www-data user
-USER www-data
+# NOTE: Do NOT set USER www-data here!
+# s6-overlay needs to start as root to run cont-init.d scripts (usermod, permissions)
+# Individual services will drop privileges to www-data as needed
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
@@ -191,8 +193,9 @@ ENV APP_ENV=local \
     APP_DEBUG=true \
     VITE_DEV_SERVER_ENABLED=true
 
-# Switch back to www-data
-USER www-data
+# NOTE: Do NOT set USER www-data here!
+# s6-overlay needs to start as root to run cont-init.d scripts (usermod, permissions)
+# Individual services will drop privileges to www-data as needed
 
 # Expose Vite port
 EXPOSE 5173

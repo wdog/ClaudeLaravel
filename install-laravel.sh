@@ -7,6 +7,8 @@
 
 set -e
 
+DOCKER_RUN="docker run --rm -u$(id -u):$(id -g) -v $(pwd)/src:/app -w /app"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -27,6 +29,7 @@ show_help() {
     echo "  --force, -f          Skip interactive prompts, use .env.install defaults"
     echo "  --help, -h           Show this help message"
     echo ""
+    echo "Examples:"
     echo "Examples:"
     echo "  ./install-laravel.sh -i       # New installation (interactive)"
     echo "  ./install-laravel.sh -c       # Clean and reinstall (interactive)"
@@ -98,9 +101,6 @@ fi
 if [ "$CLEAN_INSTALL" = true ]; then
     if [ -d "src" ]; then
         echo -e "${YELLOW}Removing src/ directory...${NC}"
-        if [ -d "src/vendor" ] || [ -d "src/node_modules" ]; then
-            docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "rm -rf /app/vendor /app/node_modules"
-        fi
         if ! rm -rf src/ 2>/dev/null; then
             sudo rm -rf src/
         fi
@@ -109,7 +109,7 @@ if [ "$CLEAN_INSTALL" = true ]; then
 
     if [ -d "database/data" ] && [ -n "$(ls -A database/data 2>/dev/null)" ]; then
         echo -e "${YELLOW}Removing database/data/...${NC}"
-        docker run --rm -v "$(pwd)/database/data:/data" alpine:latest sh -c "rm -rf /data/*" 2>/dev/null || sudo rm -rf database/data/*
+        sudo rm -rf database/data/*
         echo -e "${GREEN}✓ database/data/ removed${NC}"
     fi
     echo ""
@@ -194,7 +194,7 @@ echo -e "${BLUE}Installing Laravel 12...${NC}"
 mkdir -p src
 
 # Install Laravel 12 using Composer
-docker run --rm -v "$(pwd)/src:/app" composer:latest \
+$DOCKER_RUN -v "$(pwd)/src:/app" composer:latest \
     create-project laravel/laravel . --prefer-dist
 
 echo -e "${GREEN}✓ Laravel installed${NC}"
@@ -202,7 +202,7 @@ echo -e "${GREEN}✓ Laravel installed${NC}"
 # Generate APP_KEY if not exists
 if ! grep -q "^APP_KEY=base64:" src/.env; then
     echo -e "${BLUE}Generating APP_KEY...${NC}"
-    docker run --rm -v "$(pwd)/src:/app" -w /app php:8.4-cli \
+    $DOCKER_RUN  -v "$(pwd)/src:/app" -w /app php:8.4-cli \
         php artisan key:generate --ansi
     echo -e "${GREEN}✓ APP_KEY generated${NC}"
 fi
@@ -261,7 +261,7 @@ echo -e "${GREEN}✓ .env configured${NC}"
 # Install FilamentPHP v5
 echo -e "${BLUE}Installing FilamentPHP v5...${NC}"
 
-docker run --rm -v "$(pwd)/src:/app" -w /app composer:latest \
+$DOCKER_RUN  -v "$(pwd)/src:/app" -w /app composer:latest \
     require filament/filament:"^5.0" -W --ignore-platform-reqs
 
 echo -e "${GREEN}✓ FilamentPHP v5 installed${NC}"
@@ -269,7 +269,7 @@ echo -e "${GREEN}✓ FilamentPHP v5 installed${NC}"
 # Install Filament Panel
 echo -e "${BLUE}Setting up Filament Panel...${NC}"
 
-docker run --rm -v "$(pwd)/src:/app" -w /app php:8.4-cli \
+$DOCKER_RUN  -v "$(pwd)/src:/app" -w /app php:8.4-cli \
     php artisan filament:install --panels --no-interaction
 
 echo -e "${GREEN}✓ Filament Panel configured${NC}"
@@ -277,7 +277,7 @@ echo -e "${GREEN}✓ Filament Panel configured${NC}"
 # Install Laravel Debugbar if APP_ENV=local
 if [ "$APP_ENV" = "local" ]; then
     echo -e "${BLUE}Installing Laravel Debugbar (development)...${NC}"
-    docker run --rm -v "$(pwd)/src:/app" -w /app composer:latest \
+    $DOCKER_RUN  -v "$(pwd)/src:/app" -w /app composer:latest \
         require barryvdh/laravel-debugbar --dev --ignore-platform-reqs
     echo -e "${GREEN}✓ Laravel Debugbar installed${NC}"
 fi
@@ -337,20 +337,17 @@ echo -e "${GREEN}✓ vite.config.js configured${NC}"
 
 # Install NPM dependencies and build assets
 echo -e "${BLUE}Installing NPM dependencies...${NC}"
-docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
-    npm install
+$DOCKER_RUN node:current-alpine npm install
 echo -e "${GREEN}✓ NPM dependencies installed${NC}"
 
 # Install Vite SSL plugin for HTTPS in development
 echo -e "${BLUE}Installing Vite SSL plugin...${NC}"
-docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
-    npm install -D @vitejs/plugin-basic-ssl
+$DOCKER_RUN node:current-alpine npm install -D @vitejs/plugin-basic-ssl
 echo -e "${GREEN}✓ Vite SSL plugin installed${NC}"
 
 if [ "$APP_ENV" = "production" ]; then
     echo -e "${BLUE}Building production assets...${NC}"
-    docker run --rm -v "$(pwd)/src:/app" -w /app node:20-alpine \
-        npm run build
+    $DOCKER_RUN node:current-alpine npm run build
     echo -e "${GREEN}✓ Production assets built${NC}"
 fi
 
@@ -363,7 +360,7 @@ CURRENT_GROUP=$(id -g)
 
 # Use Docker to fix ownership (avoids sudo for most files)
 echo -e "${YELLOW}Fixing ownership using Docker (${CURRENT_USER}:${CURRENT_GROUP})...${NC}"
-docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "chown -R ${CURRENT_USER}:${CURRENT_GROUP} /app"
+$DOCKER_RUN alpine:latest sh -c "chown -R ${CURRENT_USER}:${CURRENT_GROUP} /app"
 
 # Create storage subdirectories if they don't exist
 echo -e "${YELLOW}Ensuring storage directories exist...${NC}"
