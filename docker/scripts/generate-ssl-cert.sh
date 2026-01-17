@@ -45,7 +45,7 @@ openssl req -x509 -nodes -days ${DAYS_VALID} \
     -newkey rsa:2048 \
     -keyout "${KEY_FILE}" \
     -out "${CERT_FILE}" \
-    -subj "/C=IT/ST=Italy/L=Rome/O=Laravel Docker/OU=Development/CN=localhost" \
+    -subj "/C=NO/ST=NoState/L=NoWhere/O=NoDev/OU=Development/CN=localhost" \
     -addext "subjectAltName=${SAN}"
 
 # Set proper permissions

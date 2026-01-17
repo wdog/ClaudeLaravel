@@ -12,20 +12,47 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Show help if no arguments
+show_help() {
+    echo -e "${BLUE}Laravel Docker Startup Script${NC}"
+    echo ""
+    echo "Usage: ./docker-up.sh [options]"
+    echo ""
+    echo "Options:"
+    echo "  --build, -b       Build images only (no start)"
+    echo "  --detach, -d      Start containers in background"
+    echo "  --foreground, -f  Start containers in foreground (show logs)"
+    echo "  --help, -h        Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./docker-up.sh -b           # Build only"
+    echo "  ./docker-up.sh -d           # Start detached"
+    echo "  ./docker-up.sh -f           # Start in foreground"
+    echo "  ./docker-up.sh -bd          # Build then start detached"
+    echo "  ./docker-up.sh -bf          # Build then start in foreground"
+    echo ""
+    echo "The script auto-detects development/production mode from src/.env"
+    exit 0
+}
+
+# Show help if no arguments or help flag
+if [ $# -eq 0 ]; then
+    show_help
+fi
+
+for arg in "$@"; do
+    case $arg in
+        --help|-h)
+            show_help
+            ;;
+    esac
+done
+
 echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}  Laravel Docker Startup${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 
-# Stop running containers before starting
-if [ -f "docker-compose.yml" ]; then
-    if docker-compose ps --services --filter "status=running" 2>/dev/null | grep -q .; then
-        echo -e "${YELLOW}Stopping running containers...${NC}"
-        docker-compose down 2>/dev/null || true
-        echo -e "${GREEN}✓ Containers stopped${NC}"
-        echo ""
-    fi
-fi
 
 # Check if src/.env exists
 if [ ! -f "src/.env" ]; then
@@ -83,19 +110,33 @@ echo "  Vite will be accessible at: http://${HOST_IP}:5173"
 echo ""
 
 # Parse command line arguments
-BUILD_FLAG=""
-DETACH_FLAG="-d"  # Detached by default
-FOREGROUND=false
+DO_BUILD=false
+DO_START=false
+DETACH_FLAG=""
 for arg in "$@"; do
     case $arg in
         --build|-b)
-            BUILD_FLAG="--build"
+            DO_BUILD=true
+            ;;
+        --detach|-d)
+            DO_START=true
+            DETACH_FLAG="-d"
             ;;
         --foreground|-f)
+            DO_START=true
             DETACH_FLAG=""
-            FOREGROUND=true
             ;;
-        *)
+        -*)
+            # Handle combined short flags like -bd, -bf, -db, etc.
+            if [[ "$arg" =~ b ]]; then DO_BUILD=true; fi
+            # -f and -d are mutually exclusive, -f wins
+            if [[ "$arg" =~ f ]]; then
+                DO_START=true
+                DETACH_FLAG=""
+            elif [[ "$arg" =~ d ]]; then
+                DO_START=true
+                DETACH_FLAG="-d"
+            fi
             ;;
     esac
 done
@@ -106,9 +147,6 @@ export DB_DATABASE
 export DB_USERNAME
 export DB_PASSWORD
 
-echo -e "${YELLOW}Starting containers...${NC}"
-echo ""
-
 # Determine which compose files to use
 if [ "$APP_ENV" = "local" ]; then
     COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
@@ -116,40 +154,61 @@ else
     COMPOSE_FILES="-f docker-compose.yml"
 fi
 
-# Run docker-compose with appropriate files
-docker-compose $COMPOSE_FILES up $BUILD_FLAG $DETACH_FLAG
-
-# Post-startup tasks for production
-if [ "$BUILD_TARGET" = "production" ]; then
+# Build if requested
+if [ "$DO_BUILD" = true ]; then
+    echo -e "${YELLOW}Building images...${NC}"
+    docker-compose $COMPOSE_FILES build
+    echo -e "${GREEN}✓ Build complete${NC}"
     echo ""
-    echo -e "${YELLOW}Publishing vendor assets for production...${NC}"
-    sleep 3  # Wait for container to be ready
-    docker exec laravel-app php artisan vendor:publish --tag=livewire:assets --force --ansi 2>/dev/null || echo -e "${YELLOW}Note: Run 'docker exec -it laravel-app php artisan vendor:publish --tag=livewire:assets --force' after containers are healthy${NC}"
-    echo -e "${GREEN}✓ Vendor assets published${NC}"
 fi
 
-# Show access URLs
-echo ""
-echo -e "${GREEN}================================${NC}"
-echo -e "${GREEN}  Application Started!${NC}"
-echo -e "${GREEN}================================${NC}"
-echo ""
-echo -e "${BLUE}Access your application:${NC}"
-echo "  HTTPS: https://localhost (or https://${HOST_IP})"
-echo "  Filament Admin: https://localhost/admin"
-if [ "$BUILD_TARGET" = "development" ]; then
-    echo "  Vite HMR: http://${HOST_IP}:5173"
+# Start if requested
+if [ "$DO_START" = true ]; then
+    # Stop running containers before starting
+    if docker-compose ps --services --filter "status=running" 2>/dev/null | grep -q .; then
+        echo -e "${YELLOW}Stopping running containers...${NC}"
+        docker-compose down 2>/dev/null || true
+        echo -e "${GREEN}✓ Containers stopped${NC}"
+        echo ""
+    fi
+    echo -e "${YELLOW}Starting containers...${NC}"
+    docker-compose $COMPOSE_FILES up $DETACH_FLAG
 fi
-echo ""
-echo -e "${BLUE}Useful commands:${NC}"
-echo "  docker exec -it laravel-app php artisan migrate [--force]"
-echo "  docker exec -it laravel-app php artisan [command]"
-echo "  docker exec -it laravel-app composer [command]"
-if [ "$BUILD_TARGET" = "development" ]; then
-    echo "  docker exec -it laravel-app npm [command]"
+
+# Post-startup tasks and info (only if we started containers)
+if [ "$DO_START" = true ]; then
+    # Post-startup tasks for production
+    if [ "$BUILD_TARGET" = "production" ]; then
+        echo ""
+        echo -e "${YELLOW}Publishing vendor assets for production...${NC}"
+        sleep 3  # Wait for container to be ready
+        docker exec laravel-app php artisan vendor:publish --tag=livewire:assets --force --ansi 2>/dev/null || echo -e "${YELLOW}Note: Run 'docker exec -it laravel-app php artisan vendor:publish --tag=livewire:assets --force' after containers are healthy${NC}"
+        echo -e "${GREEN}✓ Vendor assets published${NC}"
+    fi
+
+    # Show access URLs
+    echo ""
+    echo -e "${GREEN}================================${NC}"
+    echo -e "${GREEN}  Application Started!${NC}"
+    echo -e "${GREEN}================================${NC}"
+    echo ""
+    echo -e "${BLUE}Access your application:${NC}"
+    echo "  HTTPS: https://localhost (or https://${HOST_IP})"
+    echo "  Filament Admin: https://localhost/admin"
+    if [ "$BUILD_TARGET" = "development" ]; then
+        echo "  Vite HMR: https://${HOST_IP}:5173"
+    fi
+    echo ""
+    echo -e "${BLUE}Useful commands:${NC}"
+    echo "  docker exec -it laravel-app php artisan migrate [--force]"
+    echo "  docker exec -it laravel-app php artisan [command]"
+    echo "  docker exec -it laravel-app composer [command]"
+    if [ "$BUILD_TARGET" = "development" ]; then
+        echo "  docker exec -it laravel-app npm [command]"
+    fi
+    echo ""
+    echo -e "${BLUE}View logs:${NC}"
+    echo "  docker-compose logs -f"
+    echo "  docker logs -f laravel-app"
+    echo ""
 fi
-echo ""
-echo -e "${BLUE}View logs:${NC}"
-echo "  docker-compose logs -f"
-echo "  docker logs -f laravel-app"
-echo ""
