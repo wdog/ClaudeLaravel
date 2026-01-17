@@ -1,12 +1,8 @@
 #!/bin/bash
 
 # ============================================================================
-# Laravel 12 + FilamentPHP v4 Installation Script
+# Laravel 12 + FilamentPHP v5 Installation Script
 # Creates a new Laravel project in src/ with FilamentPHP and proper configuration
-#
-# Usage:
-#   ./install-laravel.sh           # Normal installation (fails if src/ exists)
-#   ./install-laravel.sh --clean   # Clean install (removes src/ and database/data/)
 # ============================================================================
 
 set -e
@@ -19,15 +15,71 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Show help
+show_help() {
+    echo -e "${BLUE}Laravel 12 + FilamentPHP v5 Installer${NC}"
+    echo ""
+    echo "Usage: ./install-laravel.sh [options]"
+    echo ""
+    echo "Options:"
+    echo "  --install, -i        Install new Laravel project (fails if src/ exists)"
+    echo "  --install-clean, -c  Remove src/ and database/data/, then install"
+    echo "  --force, -f          Skip interactive prompts, use .env.install defaults"
+    echo "  --help, -h           Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./install-laravel.sh -i       # New installation (interactive)"
+    echo "  ./install-laravel.sh -c       # Clean and reinstall (interactive)"
+    echo "  ./install-laravel.sh -if      # New installation with defaults"
+    echo "  ./install-laravel.sh -cf      # Clean and reinstall with defaults"
+    echo ""
+    echo -e "${YELLOW}Configuration:${NC}"
+    echo "  Edit .env.install to customize default values before installing."
+    exit 0
+}
+
 # Parse command line arguments
+DO_INSTALL=false
 CLEAN_INSTALL=false
-if [ "$1" = "--clean" ] || [ "$1" = "-c" ]; then
-    CLEAN_INSTALL=true
+SKIP_INTERACTIVE=false
+
+for arg in "$@"; do
+    case $arg in
+        --help|-h)
+            show_help
+            ;;
+        --install|-i)
+            DO_INSTALL=true
+            ;;
+        --install-clean|-c)
+            DO_INSTALL=true
+            CLEAN_INSTALL=true
+            ;;
+        --force|-f)
+            SKIP_INTERACTIVE=true
+            ;;
+        -*)
+            # Handle combined short flags like -if, -cf, -icf
+            if [[ "$arg" =~ i ]]; then DO_INSTALL=true; fi
+            if [[ "$arg" =~ c ]]; then DO_INSTALL=true; CLEAN_INSTALL=true; fi
+            if [[ "$arg" =~ f ]]; then SKIP_INTERACTIVE=true; fi
+            ;;
+    esac
+done
+
+# Show help if no arguments
+if [ $# -eq 0 ]; then
+    show_help
+fi
+
+# Exit if not installing
+if [ "$DO_INSTALL" = false ]; then
+    show_help
 fi
 
 echo -e "${BLUE}"
 echo "============================================="
-echo "  Laravel 12 + FilamentPHP v4 Installer"
+echo "  Laravel 12 + FilamentPHP v5 Installer"
 echo "============================================="
 echo -e "${NC}"
 
@@ -42,103 +94,61 @@ if [ -f "docker-compose.yml" ]; then
     fi
 fi
 
-# Clean install option
+# Clean install - remove existing data
 if [ "$CLEAN_INSTALL" = true ]; then
-    echo -e "${YELLOW}⚠️  CLEAN INSTALL MODE${NC}"
-    echo ""
-    echo "This will DELETE:"
-    echo "  - src/ (entire Laravel application)"
-    echo "  - database/data/ (all MySQL data)"
-    echo ""
-    echo -e "${RED}WARNING: This action is IRREVERSIBLE!${NC}"
-    echo ""
-    # read -p "Are you sure you want to proceed? (yes/no): " confirmation
-
-    # if [ "$confirmation" != "yes" ]; then
-    #     echo -e "${CYAN}Installation cancelled.${NC}"
-    #     exit 0
-    # fi
-
-    echo ""
-    echo -e "${BLUE}Removing existing installation...${NC}"
-
-    # Remove src/ directory with proper permission handling
     if [ -d "src" ]; then
         echo -e "${YELLOW}Removing src/ directory...${NC}"
-
-        # Use Docker to remove vendor/ and node_modules/ with correct permissions
         if [ -d "src/vendor" ] || [ -d "src/node_modules" ]; then
-            echo -e "${YELLOW}Removing vendor/ and node_modules/ using Docker (correct permissions)...${NC}"
             docker run --rm -v "$(pwd)/src:/app" alpine:latest sh -c "rm -rf /app/vendor /app/node_modules"
         fi
-
-        # Now remove the rest with regular rm
         if ! rm -rf src/ 2>/dev/null; then
-            echo -e "${YELLOW}Permission denied, trying with sudo...${NC}"
             sudo rm -rf src/
         fi
-
         echo -e "${GREEN}✓ src/ removed${NC}"
     fi
 
-    # Remove database data
-    if [ -d "database/data" ]; then
-        echo -e "${YELLOW}Removing database/data/ directory...${NC}"
-
-        # Try Docker Alpine first to handle MySQL files with correct permissions
-        if [ -n "$(ls -A database/data 2>/dev/null)" ]; then
-            echo -e "${YELLOW}Attempting to remove MySQL data using Docker...${NC}"
-            if docker run --rm -v "$(pwd)/database/data:/data" alpine:latest sh -c "rm -rf /data/*" 2>/dev/null; then
-                echo -e "${GREEN}✓ MySQL data removed via Docker${NC}"
-            else
-                echo -e "${YELLOW}Docker cleanup failed, trying with sudo...${NC}"
-            fi
-        fi
-
-        # Fallback to sudo if Docker fails or files still exist
-        if [ -n "$(ls -A database/data 2>/dev/null)" ]; then
-            echo -e "${YELLOW}Using sudo to remove MySQL data (requires password)...${NC}"
-            sudo rm -rf database/data/*
-            echo -e "${GREEN}✓ MySQL data removed via sudo${NC}"
-        fi
-
-        echo -e "${GREEN}✓ database/data/ cleaned${NC}"
+    if [ -d "database/data" ] && [ -n "$(ls -A database/data 2>/dev/null)" ]; then
+        echo -e "${YELLOW}Removing database/data/...${NC}"
+        docker run --rm -v "$(pwd)/database/data:/data" alpine:latest sh -c "rm -rf /data/*" 2>/dev/null || sudo rm -rf database/data/*
+        echo -e "${GREEN}✓ database/data/ removed${NC}"
     fi
-
-    echo -e "${GREEN}✓ Cleanup complete${NC}"
     echo ""
 fi
 
-# Check if src/ directory already exists with Laravel
+# Check if src/ directory already exists (only for --install, not --install-clean)
 if [ -d "src" ] && [ -f "src/artisan" ]; then
     echo -e "${RED}ERROR: Laravel project already exists in src/${NC}"
     echo ""
-    echo "Options:"
-    echo -e "  1. ${GREEN}Recommended:${NC} Run with --clean flag (handles permissions correctly):"
-    echo -e "     ${YELLOW}./install-laravel.sh --clean${NC}"
-    echo ""
-    echo "  2. Manual removal (may require sudo for vendor/ and database/data/):"
-    echo -e "     ${YELLOW}rm -rf src/ database/data/*${NC}"
-    echo ""
+    echo "Use --install-clean (-c) to remove and reinstall."
     exit 1
 fi
 
-# Default configuration
-DB_CONNECTION="mysql"
-DB_HOST="mysql"  # MUST be 'mysql' (Docker container name in docker-compose.yml)
-DB_PORT="3306"
-DB_DATABASE="laravel"
-DB_USERNAME="laravel"
-DB_PASSWORD="laravel"
-APP_ENV="local"
-APP_NAME="LaravelApp"
+# Load defaults from .env.install if exists, otherwise use hardcoded defaults
+if [ -f ".env.install" ]; then
+    source .env.install
+    echo -e "${GREEN}✓ Loaded configuration from .env.install${NC}"
+    echo ""
+else
+    # Default configuration
+    APP_NAME="LaravelApp"
+    APP_ENV="local"
+    DB_CONNECTION="mysql"
+    DB_HOST="mysql"
+    DB_PORT="3306"
+    DB_DATABASE="laravel"
+    DB_USERNAME="laravel"
+    DB_PASSWORD="laravel"
+fi
+
+# DB_HOST must always be 'mysql' (Docker container name)
+DB_HOST="mysql"
 
 # Detect LAN IP as default
 DEFAULT_HOST=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || echo "localhost")
 APP_HOST="${DEFAULT_HOST}"
 
-# Interactive configuration (skip if --clean flag is used)
-if [ "$CLEAN_INSTALL" = false ]; then
+# Interactive configuration (skip if -y flag)
+if [ "$SKIP_INTERACTIVE" = false ]; then
     echo -e "${YELLOW}Configuration (press Enter to use defaults):${NC}"
     echo ""
 
@@ -168,13 +178,13 @@ if [ "$CLEAN_INSTALL" = false ]; then
     read -p "Database Password [${DB_PASSWORD}]: " input
     DB_PASSWORD=${input:-$DB_PASSWORD}
 else
-    echo -e "${YELLOW}Using default configuration (--clean flag)${NC}"
+    echo -e "${GREEN}Using configuration from .env.install:${NC}"
     echo "  App Name: ${APP_NAME}"
     echo "  Environment: ${APP_ENV}"
     echo "  Host: ${APP_HOST}"
-    echo "  Database Host: ${DB_HOST} (fixed for Docker)"
     echo "  Database: ${DB_DATABASE}"
     echo "  Database User: ${DB_USERNAME}"
+    echo ""
 fi
 
 echo ""
@@ -248,13 +258,13 @@ sed -i "s/^# DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" src/.env || sed -i "s/^
 
 echo -e "${GREEN}✓ .env configured${NC}"
 
-# Install FilamentPHP v4
-echo -e "${BLUE}Installing FilamentPHP v4...${NC}"
+# Install FilamentPHP v5
+echo -e "${BLUE}Installing FilamentPHP v5...${NC}"
 
 docker run --rm -v "$(pwd)/src:/app" -w /app composer:latest \
-    require filament/filament:"^4.0" -W --ignore-platform-reqs
+    require filament/filament:"^5.0" -W --ignore-platform-reqs
 
-echo -e "${GREEN}✓ FilamentPHP v4 installed${NC}"
+echo -e "${GREEN}✓ FilamentPHP v5 installed${NC}"
 
 # Install Filament Panel
 echo -e "${BLUE}Setting up Filament Panel...${NC}"
