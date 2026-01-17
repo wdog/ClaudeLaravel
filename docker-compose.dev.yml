@@ -32,11 +32,11 @@ services:
       SESSION_DRIVER: file
       QUEUE_CONNECTION: sync
 
-    # Expose additional ports for development
+    # Expose ports for development
     ports:
       - "80:80"       # HTTP (redirects to HTTPS)
       - "443:443"     # HTTPS
-      - "5173:5173"   # Vite HMR dev server
+      - "5173:5173"   # Vite HMR (HTTP)
 
     # Mount source code as volume for live editing
     volumes:
