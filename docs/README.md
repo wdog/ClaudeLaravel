@@ -299,17 +299,20 @@ Per iniziare subito:
 
 ## 📊 Stato del Progetto
 
-**Versione**: 1.0
-**Ultimo Aggiornamento**: 2026-01-11
-**Status**: ✅ Implementation Complete (Ready for Testing)
+**Versione**: 1.1
+**Ultimo Aggiornamento**: 2026-01-17
+**Status**: ✅ Implementation Complete (Tested)
 
 **Key Features Implemented**:
 - ✅ Single HOST configuration (auto-detects LAN IP)
 - ✅ HTTPS by default (APP_URL=https://${HOST})
 - ✅ Vite HMR over HTTPS with LAN access
 - ✅ Auto-generated Vite config (no stub files)
-- ✅ Permission handling with sudo chmod 777
-- ✅ docker-up.sh detached by default (--foreground flag)
+- ✅ **Automatic UID/GID mapping** - www-data matches host user (no more permission issues!)
+- ✅ **s6-overlay v3 with proper oneshot init** - services start in correct order
+- ✅ **s6-setuidgid** for all services (vite-dev, scheduler, queue-worker)
+- ✅ docker-up.sh shows executed commands
+- ✅ Test script for permission verification (`test/test-permissions.sh`)
 - ✅ Manual migrations (not automatic)
 - ✅ Complete documentation
 

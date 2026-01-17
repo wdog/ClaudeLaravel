@@ -102,7 +102,13 @@ docker-compose down
 ClaudeLaravel/
 ├── src/                  # Laravel app (created by install)
 ├── docker/               # Docker configs
+│   ├── s6-overlay/       # s6-rc service definitions
+│   │   ├── s6-rc.d/      # Service configs (init-usermod, php-fpm, nginx, vite-dev, etc.)
+│   │   └── scripts/      # Init scripts
+│   ├── nginx/            # Nginx configs
+│   └── php/              # PHP configs
 ├── database/data/        # MySQL data (gitignored)
+├── test/                 # Test scripts
 ├── .env.install          # Install defaults
 ├── install-laravel.sh    # Installer
 └── docker-up.sh          # Start script
@@ -115,14 +121,22 @@ ClaudeLaravel/
 - **MySQL 8.0**
 - **FilamentPHP v5**
 - **Vite** with HMR over HTTPS
-- **s6-overlay** process supervision
+- **s6-overlay v3** process supervision with proper service dependencies
+- **Automatic UID/GID mapping** - www-data matches host user for seamless file permissions
 - Auto-detect dev/prod from `src/.env`
 
 ## Troubleshooting
 
 ### Permission issues
+
+Permissions should work automatically thanks to UID/GID mapping. If you still have issues:
+
 ```bash
-sudo chmod -R 777 src/storage src/bootstrap/cache
+# Verify UID mapping (should match your host user)
+docker exec laravel-app id www-data
+
+# Run the test script to verify everything works
+./test/test-permissions.sh
 ```
 
 ### Database connection error

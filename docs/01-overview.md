@@ -3,7 +3,7 @@
 ## 🎯 Obiettivo
 
 Creare un ambiente Docker **production-ready** e **developer-friendly** per applicazioni Laravel 12 con:
-- ✅ **FilamentPHP v4** - Admin panel moderno
+- ✅ **FilamentPHP v5** - Admin panel moderno
 - ✅ **Vite HMR** - Hot Module Replacement in development
 - ✅ **s6-overlay** - Process supervision robusto
 - ✅ **Alpine Linux** - Immagini leggere e sicure
@@ -72,11 +72,12 @@ Creare un ambiente Docker **production-ready** e **developer-friendly** per appl
 
 ### 5. **Production Ready**
 - Multi-stage build ottimizzato
-- Non-root user (www-data)
+- **Automatic UID/GID mapping** - www-data matches host user for seamless permissions
 - Security headers
 - SSL/HTTPS con certificati self-signed
 - Health checks integrati
 - Laravel scheduler e queue workers
+- s6-overlay v3 with proper service dependencies
 
 ---
 
@@ -85,7 +86,7 @@ Creare un ambiente Docker **production-ready** e **developer-friendly** per appl
 | Componente | Tecnologia | Versione | Scopo |
 |------------|------------|----------|-------|
 | **Framework** | Laravel | 12.x | Backend PHP framework |
-| **Admin Panel** | FilamentPHP | 4.x | Admin interface |
+| **Admin Panel** | FilamentPHP | 5.x | Admin interface |
 | **Frontend Build** | Vite | 5.x | Asset bundling e HMR |
 | **Web Server** | Nginx | Alpine latest | Reverse proxy e static files |
 | **PHP Runtime** | PHP-FPM | 8.4 Alpine | FastCGI Process Manager |
