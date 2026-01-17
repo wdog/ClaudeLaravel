@@ -1,5 +1,13 @@
 # Laravel Docker + FilamentPHP v5
 
+A smart Docker environment that automatically adapts to your needs.
+
+Set `APP_ENV=local` in your `.env` and get a full development setup with Vite HMR, debugging tools, and hot reload. Switch to `APP_ENV=production` and the same Docker setup builds an optimized, secure production image.
+
+**One configuration, two environments.** No separate docker-compose files, no manual switching. Just change your `.env` and rebuild.
+
+---
+
 Docker environment for Laravel 12 with PHP 8.4, Nginx HTTPS, MySQL, and FilamentPHP v5.
 
 ## Quick Start
