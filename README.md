@@ -94,6 +94,33 @@ docker-compose logs -f
 
 # Stop
 docker-compose down
+
+# Restart (from project root)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# Restart from src/ folder (Bash)
+(cd .. && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d)
+
+# Restart from src/ folder (Fish shell)
+cd ..; and docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d; and cd src
+```
+
+### Shell aliases
+
+Add these aliases to run Docker commands from the `src/` folder.
+
+**Bash** (`~/.bashrc`):
+```bash
+alias dcup='(cd .. && docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d)'
+alias dcdown='(cd .. && docker-compose down)'
+alias dclogs='(cd .. && docker-compose logs -f)'
+```
+
+**Fish** (`~/.config/fish/config.fish`):
+```fish
+alias dcup='cd ..; and docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d; and cd src'
+alias dcdown='cd ..; and docker-compose down; and cd src'
+alias dclogs='cd ..; and docker-compose logs -f'
 ```
 
 ## Project Structure
