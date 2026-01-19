@@ -143,8 +143,8 @@ Questa checklist traccia lo stato di avanzamento del progetto Docker Laravel.
 
 - ✅ `docker/s6-overlay/s6-rc.d/vite-dev/type` - longrun
 - ✅ `docker/s6-overlay/s6-rc.d/vite-dev/run` - npm run dev
-- 🔲 **Environment check**: Da implementare dev-only logic (opzionale)
-- ⏳ **Test**: HMR funziona in development (da testare)
+- ✅ **Environment check**: Implementato - si disabilita automaticamente in production (APP_ENV=production)
+- ✅ **Test**: HMR funziona in development
 
 ### 2.7 User Bundle
 
@@ -581,6 +581,81 @@ Questa checklist traccia lo stato di avanzamento del progetto Docker Laravel.
   - ❌ Health check failures
   - ❌ Resource limits
   - ❌ Error rates
+
+---
+
+## 🔄 Service Execution Order
+
+### Container Startup Flow
+
+```
+Container Start (as root)
+      │
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  init-usermod (oneshot)                                     │
+│  ├─ Maps www-data UID/GID to host user (PUID/PGID)         │
+│  ├─ Creates /var/run/php directory                          │
+│  ├─ Fixes Laravel storage/cache permissions                 │
+│  └─ Configures services based on APP_ENV:                   │
+│      ├─ PRODUCTION: removes vite-dev, enables scheduler     │
+│      └─ DEVELOPMENT: removes scheduler/queue, enables vite  │
+└─────────────────────────────────────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  init-assets (oneshot, as www-data)                         │
+│  ├─ PRODUCTION:                                             │
+│  │   ├─ Removes public/hot file                             │
+│  │   ├─ Runs npm ci (if node_modules missing)               │
+│  │   └─ Runs npm run build                                  │
+│  └─ DEVELOPMENT: skips (Vite HMR handles assets)            │
+└─────────────────────────────────────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Longrun Services (parallel, as www-data)                   │
+│                                                             │
+│  ALWAYS:                                                    │
+│  ├─ php-fpm      → PHP FastCGI Process Manager              │
+│  ├─ nginx        → Web server (depends on php-fpm)          │
+│  ├─ scheduler    → php artisan schedule:work                │
+│  └─ queue-worker → php artisan queue:work                   │
+│                                                             │
+│  DEVELOPMENT ONLY:                                          │
+│  └─ vite-dev     → npm run dev (HMR server)                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Service Dependencies
+
+```
+init-usermod (no deps)
+    │
+    ├── init-assets (depends on init-usermod)
+    │       │
+    │       └── nginx (depends on init-assets, php-fpm)
+    │
+    ├── php-fpm (depends on init-usermod)
+    │
+    ├── scheduler (depends on init-usermod, php-fpm) [ALWAYS]
+    │
+    ├── queue-worker (depends on init-usermod, php-fpm) [ALWAYS]
+    │
+    └── vite-dev (depends on init-usermod) [DEV ONLY]
+```
+
+### Why This Order?
+
+1. **init-usermod first**: Must run as root to modify user UID/GID. Also decides which services to enable based on APP_ENV.
+
+2. **init-assets second**: Needs www-data user configured. In production, builds assets before nginx serves them.
+
+3. **php-fpm before nginx**: Nginx proxies to PHP-FPM socket, which must exist first.
+
+4. **Environment-specific services**:
+   - scheduler/queue-worker run in both environments
+   - vite-dev only in development (disabled in production)
 
 ---
 

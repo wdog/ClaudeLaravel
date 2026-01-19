@@ -118,9 +118,9 @@ alias dclogs='(cd .. && docker-compose logs -f)'
 
 **Fish** (`~/.config/fish/config.fish`):
 ```fish
-alias dcup='cd ..; and docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d; and cd src'
-alias dcdown='cd ..; and docker-compose down; and cd src'
-alias dclogs='cd ..; and docker-compose logs -f'
+alias dcup 'cd ..; and docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d; and cd src'
+alias dcdown 'cd ..; and docker-compose down; and cd src'
+alias dclogs 'cd ..; and docker-compose logs -f'
 ```
 
 ## Project Structure
@@ -151,6 +151,97 @@ ClaudeLaravel/
 - **s6-overlay v3** process supervision with proper service dependencies
 - **Automatic UID/GID mapping** - www-data matches host user for seamless file permissions
 - Auto-detect dev/prod from `src/.env`
+
+---
+
+## Development Mode (`APP_ENV=local`)
+
+### Setup
+
+1. Set in `src/.env`:
+   ```env
+   APP_ENV=local
+   APP_DEBUG=true
+   ```
+
+2. Build and start:
+   ```bash
+   ./docker-up.sh -bd
+   ```
+
+### What runs
+
+| Service | Status | Description |
+|---------|--------|-------------|
+| init-usermod | runs | Maps www-data UID to host user |
+| init-assets | skips build | Vite HMR handles assets |
+| php-fpm | runs | PHP FastCGI |
+| nginx | runs | Web server |
+| vite-dev | runs | `npm run dev` with HMR |
+| scheduler | runs | `php artisan schedule:work` |
+| queue-worker | runs | `php artisan queue:work` |
+
+### Workflow
+
+- Edit files in `src/` - changes reflect immediately
+- CSS/JS changes hot-reload via Vite HMR
+- Access app at `https://{HOST}`
+- Vite HMR at `https://{HOST}:5173`
+
+---
+
+## Production Mode (`APP_ENV=production`)
+
+### Setup
+
+1. Set in `src/.env`:
+   ```env
+   APP_ENV=production
+   APP_DEBUG=false
+   DEBUGBAR_ENABLED=false
+   ```
+
+2. Build and start:
+   ```bash
+   ./docker-up.sh -bd
+   ```
+
+### What runs
+
+| Service | Status | Description |
+|---------|--------|-------------|
+| init-usermod | runs | Maps www-data UID to host user |
+| init-assets | runs | `npm run build`, removes `hot` file |
+| php-fpm | runs | PHP FastCGI |
+| nginx | runs | Web server |
+| vite-dev | disabled | Not needed, assets pre-built |
+| scheduler | runs | `php artisan schedule:work` |
+| queue-worker | runs | `php artisan queue:work` |
+
+### Workflow
+
+- Assets compiled automatically at container start
+- To rebuild assets manually:
+  ```bash
+  docker exec -u www-data -it laravel-app npm run build
+  ```
+- Scheduler runs cron jobs automatically
+- Queue worker processes jobs automatically
+
+### Post-deploy commands
+
+```bash
+# Run migrations
+docker exec -it laravel-app php artisan migrate --force
+
+# Clear and rebuild caches
+docker exec -it laravel-app php artisan optimize
+
+# Create admin user (if needed)
+docker exec -it laravel-app php artisan make:filament-user
+```
+
+---
 
 ## Troubleshooting
 

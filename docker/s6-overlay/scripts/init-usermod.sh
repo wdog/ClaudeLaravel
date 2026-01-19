@@ -20,3 +20,19 @@ if [ -d /var/www/html/storage ]; then
 fi
 
 echo "www-data mapped to UID:${PUID} GID:${PGID}"
+
+# ============================================================================
+# Configure services based on APP_ENV
+# ============================================================================
+CONTENTS_DIR="/etc/s6-overlay/s6-rc.d/user/contents.d"
+
+# scheduler and queue-worker always enabled
+touch "$CONTENTS_DIR/scheduler" "$CONTENTS_DIR/queue-worker"
+
+if [ "$APP_ENV" = "production" ]; then
+    echo "init-usermod: Configuring services for PRODUCTION"
+    rm -f "$CONTENTS_DIR/vite-dev"
+else
+    echo "init-usermod: Configuring services for DEVELOPMENT"
+    touch "$CONTENTS_DIR/vite-dev"
+fi

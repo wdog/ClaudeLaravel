@@ -153,6 +153,9 @@ RUN npm run build
 # ============================================================================
 FROM base AS production
 
+# Install Node.js for npm run build (needed when using volume mounts)
+RUN apk add --no-cache nodejs npm
+
 # Copy vendor from composer stage
 # COPY --from=composer --chown=www-data:www-data /app/vendor /var/www/html/vendor
 
@@ -161,6 +164,7 @@ FROM base AS production
 
 # NOTE: Fase 1 - Il codice viene montato da ./src (non copiato)
 # TODO: Fase 2 - Decommentare le righe sopra per copiare vendor e assets nell'immagine
+#       e rimuovere nodejs/npm (non serviranno più)
 
 # Set production PHP configurations
 ENV APP_ENV=production \
