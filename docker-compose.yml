@@ -34,6 +34,10 @@ services:
     volumes:
       # Mount Laravel application
       - ./src:/var/www/html
+      # Cache directories su named volumes (più veloci dei bind mounts)
+      - laravel-cache:/var/www/html/storage/framework/cache
+      - laravel-views:/var/www/html/storage/framework/views
+      - laravel-sessions:/var/www/html/storage/framework/sessions
 
     ports:
       - "80:80"     # HTTP (redirects to HTTPS)
@@ -74,7 +78,7 @@ services:
       TZ: Europe/Rome
 
     volumes:
-      # Persistent data storage
+      # Persistent data storage (bind mount per visibilità e backup)
       - ./database/data:/var/lib/mysql
       # Custom MySQL configuration
       - ./database/config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
@@ -99,3 +103,11 @@ networks:
   laravel-network:
     driver: bridge
     name: laravel-network
+
+# ============================================================================
+# Volumes (named volumes per performance cache)
+# ============================================================================
+volumes:
+  laravel-cache:
+  laravel-views:
+  laravel-sessions:
