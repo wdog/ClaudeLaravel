@@ -1,6 +1,6 @@
 #!/command/execlineb -P
-# Laravel Scheduler - Runs scheduled tasks
-# Only active in production mode (disabled in local/development)
+# Laravel Scheduler - Runs scheduled tasks (cron)
+# Always active in both dev and production
 s6-setuidgid www-data
 cd /var/www/html
 /usr/local/bin/php artisan schedule:work

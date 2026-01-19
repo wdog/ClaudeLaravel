@@ -1,1 +1,1 @@
-s6-setuidgid www-data /etc/s6-overlay/scripts/init-assets.sh
+/etc/s6-overlay/scripts/init-assets.sh

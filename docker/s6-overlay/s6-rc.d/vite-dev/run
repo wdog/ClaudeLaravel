@@ -1,7 +1,13 @@
-#!/command/execlineb -P
+#!/command/with-contenv sh
 # Vite Dev Server - Hot Module Replacement
-# Only runs in development (removed from bundle in production by init-usermod)
+# DEVELOPMENT: runs npm run dev
+# PRODUCTION: exits immediately (assets built by init-assets)
 
-s6-setuidgid www-data
+if [ "$APP_ENV" = "production" ]; then
+    echo "vite-dev: disabled in production"
+    exec s6-svc -Od .
+fi
+
+echo "vite-dev: starting npm run dev"
 cd /var/www/html
-/usr/bin/npm run dev
+exec s6-setuidgid www-data npm run dev

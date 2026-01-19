@@ -604,11 +604,11 @@ Container Start (as root)
       │
       ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  init-assets (oneshot, as www-data)                         │
+│  init-assets (oneshot, as root then www-data)               │
 │  ├─ PRODUCTION:                                             │
-│  │   ├─ Removes public/hot file                             │
-│  │   ├─ Runs npm ci (if node_modules missing)               │
-│  │   └─ Runs npm run build                                  │
+│  │   ├─ Removes public/hot file (as root)                   │
+│  │   ├─ Runs npm ci (as www-data, if node_modules missing)  │
+│  │   └─ Runs npm run build (as www-data)                    │
 │  └─ DEVELOPMENT: skips (Vite HMR handles assets)            │
 └─────────────────────────────────────────────────────────────┘
       │
@@ -647,15 +647,35 @@ init-usermod (no deps)
 
 ### Why This Order?
 
-1. **init-usermod first**: Must run as root to modify user UID/GID. Also decides which services to enable based on APP_ENV.
+1. **init-usermod first**: Must run as root to modify user UID/GID.
 
-2. **init-assets second**: Needs www-data user configured. In production, builds assets before nginx serves them.
+2. **init-assets second**: Needs www-data user configured. In production, removes `hot` file (as root) and builds assets (as www-data).
 
 3. **php-fpm before nginx**: Nginx proxies to PHP-FPM socket, which must exist first.
 
 4. **Environment-specific services**:
    - scheduler/queue-worker run in both environments
-   - vite-dev only in development (disabled in production)
+   - vite-dev checks APP_ENV at runtime and exits immediately in production (`s6-svc -Od .`)
+
+### Script Standards
+
+All scripts use a consistent format:
+
+| Script | Shebang | Description |
+|--------|---------|-------------|
+| `php-fpm/run` | `#!/command/execlineb -P` | Simple service, no env vars needed |
+| `nginx/run` | `#!/command/execlineb -P` | Simple service, no env vars needed |
+| `scheduler/run` | `#!/command/execlineb -P` | Simple service, no env vars needed |
+| `queue-worker/run` | `#!/command/execlineb -P` | Simple service, no env vars needed |
+| `vite-dev/run` | `#!/command/with-contenv sh` | Needs APP_ENV to decide behavior |
+| `init-usermod.sh` | `#!/command/with-contenv sh` | Needs PUID/PGID/APP_ENV |
+| `init-assets.sh` | `#!/command/with-contenv sh` | Needs APP_ENV to decide behavior |
+
+**Key patterns:**
+- `execlineb -P`: For simple services that just run a command
+- `with-contenv sh`: For scripts that need environment variables from container
+- `s6-setuidgid www-data`: Drop privileges to www-data user
+- `exec`: Replace shell with command (proper signal handling)
 
 ---
 

@@ -1,6 +1,6 @@
 #!/command/execlineb -P
-# Laravel Queue Worker - Processes queue jobs
-# Controlled by QUEUE_WORKER_ENABLED environment variable
+# Laravel Queue Worker - Processes background jobs
+# Always active in both dev and production
 s6-setuidgid www-data
 cd /var/www/html
 /usr/local/bin/php artisan queue:work --tries=3 --timeout=90

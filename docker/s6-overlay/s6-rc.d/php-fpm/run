@@ -1,2 +1,3 @@
 #!/command/execlineb -P
+# PHP-FPM - FastCGI Process Manager
 /usr/local/sbin/php-fpm -F

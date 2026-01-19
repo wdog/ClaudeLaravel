@@ -1,2 +1,3 @@
 #!/command/execlineb -P
+# Nginx - Web Server
 /usr/sbin/nginx -g "daemon off;"
