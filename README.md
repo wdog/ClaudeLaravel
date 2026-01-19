@@ -243,6 +243,82 @@ docker exec -it laravel-app php artisan make:filament-user
 
 ---
 
+## How It Works
+
+### Container Build Flow
+
+```
+docker-compose up --build
+        │
+        ▼
+┌──────────────────────────────────┐
+│  1. Build Docker Image           │
+│     ├─ PHP 8.4 FPM Alpine        │
+│     ├─ s6-overlay v3 installed   │
+│     ├─ Nginx configured          │
+│     ├─ Node.js + npm installed   │
+│     └─ SSL certificates generated│
+└──────────────────────────────────┘
+        │
+        ▼
+┌──────────────────────────────────┐
+│  2. Start Container (as root)    │
+│     └─ s6-overlay takes control  │
+└──────────────────────────────────┘
+        │
+        ▼
+    s6 Startup
+```
+
+### s6 Startup Flow
+
+```
+Container Start
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  init-usermod (oneshot, as root)        │
+│  ├─ Map www-data UID/GID to host user   │
+│  ├─ Create PHP-FPM socket directory     │
+│  └─ Fix Laravel storage permissions     │
+└─────────────────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  init-assets (oneshot)                  │
+│  ├─ PRODUCTION: npm run build           │
+│  └─ DEVELOPMENT: skip (Vite HMR active) │
+└─────────────────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  Longrun Services (as www-data)         │
+│                                         │
+│  BOTH MODES:                            │
+│  ├─ php-fpm     (PHP FastCGI)           │
+│  ├─ nginx       (web server)            │
+│  ├─ scheduler   (artisan schedule:work) │
+│  └─ queue-worker (artisan queue:work)   │
+│                                         │
+│  DEVELOPMENT ONLY:                      │
+│  └─ vite-dev    (npm run dev, HMR)      │
+└─────────────────────────────────────────┘
+```
+
+### Development vs Production
+
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| `APP_ENV` | local | production |
+| Assets | Vite HMR (live) | Pre-built at startup |
+| vite-dev | ✅ Running | ❌ Disabled |
+| scheduler | ✅ Running | ✅ Running |
+| queue-worker | ✅ Running | ✅ Running |
+| Hot file | Created by Vite | Removed at startup |
+| Debug | Enabled | Disabled |
+
+---
+
 ## Troubleshooting
 
 ### Permission issues
