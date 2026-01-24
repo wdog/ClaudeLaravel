@@ -254,6 +254,7 @@ Questa checklist traccia lo stato di avanzamento del progetto Docker Laravel.
   - ✅ Set permissions
   - ⏳ **Test end-to-end**: Da eseguire
 
+
 - ✅ `docker/scripts/entrypoint.sh`
   - ✅ Implementato completamente
   - 🔲 Usato tramite s6 cont-init.d (non direttamente)
