@@ -205,7 +205,7 @@ if [ "$DO_START" = true ]; then
         echo ""
         echo -e "${YELLOW}Publishing vendor assets for production...${NC}"
         sleep 3  # Wait for container to be ready
-        docker exec laravel-app php artisan vendor:publish --tag=livewire:assets --force --ansi 2>/dev/null || echo -e "${YELLOW}Note: Run 'docker exec -it laravel-app php artisan vendor:publish --tag=livewire:assets --force' after containers are healthy${NC}"
+        docker-compose $COMPOSE_FILES exec -T app php artisan vendor:publish --tag=livewire:assets --force --ansi 2>/dev/null || echo -e "${YELLOW}Note: Run 'docker-compose exec app php artisan vendor:publish --tag=livewire:assets --force' after containers are healthy${NC}"
         echo -e "${GREEN}✓ Vendor assets published${NC}"
     fi
 
@@ -223,15 +223,15 @@ if [ "$DO_START" = true ]; then
     fi
     echo ""
     echo -e "${BLUE}Useful commands:${NC}"
-    echo "  docker exec -it laravel-app php artisan migrate [--force]"
-    echo "  docker exec -it laravel-app php artisan [command]"
-    echo "  docker exec -it laravel-app composer [command]"
+    echo "  docker-compose exec app php artisan migrate [--force]"
+    echo "  docker-compose exec app php artisan [command]"
+    echo "  docker-compose exec app composer [command]"
     if [ "$BUILD_TARGET" = "development" ]; then
-        echo "  docker exec -it laravel-app npm [command]"
+        echo "  docker-compose exec app npm [command]"
     fi
     echo ""
     echo -e "${BLUE}View logs:${NC}"
     echo "  docker-compose logs -f"
-    echo "  docker logs -f laravel-app"
+    echo "  docker-compose logs -f app"
     echo ""
 fi

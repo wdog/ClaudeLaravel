@@ -64,11 +64,22 @@ services:
     #   - --general-log-file=/var/lib/mysql/general.log
 
   # ============================================================================
+  # Mailpit - Email testing for development
+  # ============================================================================
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    networks:
+      - laravel-network
+    restart: "no"
+
+  # ============================================================================
   # Redis (Optional) - Uncomment if needed for development
   # ============================================================================
   # redis:
   #   image: redis:7-alpine
-  #   container_name: laravel-redis
   #   ports:
   #     - "6379:6379"
   #   networks:

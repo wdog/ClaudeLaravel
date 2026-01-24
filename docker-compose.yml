@@ -15,8 +15,6 @@ services:
       # target will be set by docker-up.sh based on APP_ENV in src/.env
       target: ${BUILD_TARGET:-production}
     image: laravel-app:${BUILD_TARGET:-production}
-    # ! change image name here
-    container_name: laravel-app
     restart: unless-stopped
 
     # Load environment from Laravel's .env file
@@ -62,7 +60,6 @@ services:
   # ============================================================================
   mysql:
     image: mysql:8.4
-    container_name: laravel-mysql
     restart: unless-stopped
 
     # Read database credentials from Laravel's .env
@@ -102,7 +99,6 @@ services:
 networks:
   laravel-network:
     driver: bridge
-    name: laravel-network
 
 # ============================================================================
 # Volumes (named volumes per performance cache)
