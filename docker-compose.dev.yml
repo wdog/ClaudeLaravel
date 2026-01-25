@@ -25,7 +25,6 @@ services:
 
       # Laravel development settings
       LOG_LEVEL: debug
-      LOG_CHANNEL: stderr
 
       # Cache/Session drivers for development (use file/sync for simplicity)
       CACHE_DRIVER: file
