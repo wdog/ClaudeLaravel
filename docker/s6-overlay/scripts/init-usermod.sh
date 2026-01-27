@@ -14,6 +14,12 @@ mkdir -p /var/run/php
 chown www-data:www-data /var/run/php
 chmod 755 /var/run/php
 
+# Fix nginx temp directories for file uploads
+if [ -d /var/lib/nginx/tmp ]; then
+    chown -R nginx:nginx /var/lib/nginx/tmp
+    chmod -R 700 /var/lib/nginx/tmp
+fi
+
 # Fix Laravel permissions if exists
 if [ -d /var/www/html/storage ]; then
     chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
