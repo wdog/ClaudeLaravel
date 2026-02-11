@@ -16,9 +16,12 @@ CURRENT_UID=$(id -u www-data)
 CURRENT_GID=$(id -g www-data)
 
 if [ "$PUID" = "0" ]; then
-    # Running as root (e.g. Synology DSM) — skip remapping
-    echo "init-usermod: PUID=0 detected (root/Synology), skipping UID/GID remap"
-    echo "init-usermod: www-data stays at UID:${CURRENT_UID} GID:${CURRENT_GID}"
+    # Running as root (e.g. Synology DSM, production server)
+    # Cannot remap www-data to UID 0 (PHP-FPM refuses to run workers as root)
+    # Instead, chown the app directory so www-data (UID 82) can access it
+    echo "init-usermod: PUID=0 detected (root), www-data stays at UID:${CURRENT_UID} GID:${CURRENT_GID}"
+    echo "init-usermod: chowning /var/www/html to www-data..."
+    chown -R www-data:www-data /var/www/html 2>/dev/null || true
 else
     # Remap only if different from current
     if [ "$CURRENT_GID" != "$PGID" ]; then
