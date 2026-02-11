@@ -28,6 +28,8 @@ services:
       # Map www-data UID/GID to host user (fixes permission issues)
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
+      # Allow init-assets (npm ci + build) to complete without timeout
+      S6_CMD_WAIT_FOR_SERVICES_MAXTIME: 0
 
     volumes:
       # Mount Laravel application
