@@ -97,7 +97,8 @@ RUN mkdir -p \
     && chown -R www-data:www-data \
     /var/run/php \
     /etc/nginx/ssl \
-    /var/lib/nginx
+    /var/lib/nginx \
+    && chmod -R 755 /var/lib/nginx
 
 # Expose HTTP and HTTPS ports
 EXPOSE 80 443

@@ -31,6 +31,16 @@ services:
       SESSION_DRIVER: file
       QUEUE_CONNECTION: sync
 
+      # Mailpit SMTP for development
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_ENCRYPTION: "null"
+      MAIL_FROM_ADDRESS: "noreply@localhost.test"
+      MAIL_FROM_NAME: "${APP_NAME:-Laravel}"
+
     # Expose ports for development
     ports:
       - "80:80"       # HTTP (redirects to HTTPS)

@@ -32,10 +32,6 @@ services:
     volumes:
       # Mount Laravel application
       - ./src:/var/www/html
-      # Cache directories su named volumes (più veloci dei bind mounts)
-      - laravel-cache:/var/www/html/storage/framework/cache
-      - laravel-views:/var/www/html/storage/framework/views
-      - laravel-sessions:/var/www/html/storage/framework/sessions
 
     ports:
       - "80:80"     # HTTP (redirects to HTTPS)
@@ -99,11 +95,3 @@ services:
 networks:
   laravel-network:
     driver: bridge
-
-# ============================================================================
-# Volumes (named volumes per performance cache)
-# ============================================================================
-volumes:
-  laravel-cache:
-  laravel-views:
-  laravel-sessions:
