@@ -24,14 +24,14 @@ Docker-based Laravel 12 + FilamentPHP v5 development environment with automatic 
 docker-compose down          # Stop containers
 ```
 
-### Inside Container
+### Inside Container (always use this prefix)
 ```bash
-docker exec -it laravel-app php artisan migrate              # Run migrations
-docker exec -it laravel-app php artisan make:filament-user   # Create admin
-docker exec -it laravel-app php artisan test --compact       # Run all tests
-docker exec -it laravel-app php artisan test --filter=testName  # Run single test
-docker exec -it laravel-app vendor/bin/pint --dirty          # Format changed PHP files
-docker exec -it laravel-app npm run build                    # Build assets (production)
+docker compose exec -u 1000:1000 app php artisan migrate              # Run migrations
+docker compose exec -u 1000:1000 app php artisan make:filament-user   # Create admin
+docker compose exec -u 1000:1000 app php artisan test --compact       # Run all tests
+docker compose exec -u 1000:1000 app php artisan test --filter=testName  # Run single test
+docker compose exec -u 1000:1000 app ./vendor/bin/pint --dirty         # Format changed PHP files
+docker compose exec -u 1000:1000 app npm run build                    # Build assets (production)
 ```
 
 ### From src/ Directory
@@ -80,14 +80,14 @@ See `src/CLAUDE.md` for comprehensive Laravel Boost guidelines covering:
 - Livewire 4 (server-side state, wire:key in loops, lifecycle hooks)
 - Tailwind CSS v4 (CSS-first @theme config, no tailwind.config.js)
 - PHPUnit testing (use `php artisan make:test`, run minimal tests with --filter)
-- Laravel Pint (always run `vendor/bin/pint --dirty` before finalizing)
+- Laravel Pint (always run via `docker compose exec -u 1000:1000 app ./vendor/bin/pint --dirty`)
 
 ## Key Conventions
 
 - Use `php artisan make:*` commands with `--no-interaction` flag
 - Prefer Eloquent over raw DB queries; use eager loading to prevent N+1
 - Create Form Request classes for validation (not inline in controllers)
-- Run `vendor/bin/pint --dirty` before committing PHP changes
+- Run `docker compose exec -u 1000:1000 app ./vendor/bin/pint --dirty` before committing PHP changes
 - Most tests should be Feature tests, not Unit tests
 - Use factories when creating models in tests
 
