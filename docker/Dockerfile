@@ -65,8 +65,11 @@ RUN curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/
 
 # Copy PHP configurations
 COPY docker/php/php.ini /usr/local/etc/php/php.ini
-COPY docker/php/php-fpm.conf /usr/local/etc/php-fpm.d/zz-custom.conf
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+# Remove default FPM pool configs to avoid conflicts, then install ours
+RUN rm -f /usr/local/etc/php-fpm.d/www.conf /usr/local/etc/php-fpm.d/www.conf.default /usr/local/etc/php-fpm.d/zz-docker.conf /usr/local/etc/php-fpm.d/docker.conf
+COPY docker/php/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 
 # Copy Nginx configuration
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
