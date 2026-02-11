@@ -15,11 +15,11 @@ if [ "$APP_ENV" = "production" ]; then
 
     # Clean install dependencies (ensures correct platform binaries)
     echo "init-assets: Installing npm dependencies..."
-    s6-setuidgid www-data npm ci --no-audit
+    HOME=/tmp s6-setuidgid www-data npm ci --no-audit
 
     # Build assets
     echo "init-assets: Running npm run build..."
-    s6-setuidgid www-data npm run build
+    HOME=/tmp s6-setuidgid www-data npm run build
 
     echo "init-assets: Assets built successfully"
 else
