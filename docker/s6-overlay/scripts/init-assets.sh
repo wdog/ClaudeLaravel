@@ -13,11 +13,9 @@ if [ "$APP_ENV" = "production" ]; then
     # Remove hot file (may have wrong permissions from dev)
     rm -f /var/www/html/public/hot
 
-    # Install dependencies if missing
-    if [ ! -d "node_modules" ]; then
-        echo "init-assets: Installing npm dependencies..."
-        s6-setuidgid www-data npm ci --prefer-offline --no-audit
-    fi
+    # Clean install dependencies (ensures correct platform binaries)
+    echo "init-assets: Installing npm dependencies..."
+    s6-setuidgid www-data npm ci --no-audit
 
     # Build assets
     echo "init-assets: Running npm run build..."
