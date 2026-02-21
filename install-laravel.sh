@@ -132,16 +132,7 @@ else
     # Default configuration
     APP_NAME="LaravelApp"
     APP_ENV="local"
-    DB_CONNECTION="mysql"
-    DB_HOST="mysql"
-    DB_PORT="3306"
-    DB_DATABASE="laravel"
-    DB_USERNAME="laravel"
-    DB_PASSWORD="laravel"
 fi
-
-# DB_HOST must always be 'mysql' (Docker container name)
-DB_HOST="mysql"
 
 # Detect LAN IP as default
 DEFAULT_HOST=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || echo "localhost")
@@ -165,25 +156,13 @@ if [ "$SKIP_INTERACTIVE" = false ]; then
     read -p "Host [${DEFAULT_HOST}]: " input
     APP_HOST=${input:-$DEFAULT_HOST}
 
-    # DB_HOST is always 'mysql' for Docker - do not ask user
     echo ""
-    echo -e "${CYAN}Database Host: ${DB_HOST} (fixed for Docker)${NC}"
-
-    read -p "Database Name [${DB_DATABASE}]: " input
-    DB_DATABASE=${input:-$DB_DATABASE}
-
-    read -p "Database User [${DB_USERNAME}]: " input
-    DB_USERNAME=${input:-$DB_USERNAME}
-
-    read -p "Database Password [${DB_PASSWORD}]: " input
-    DB_PASSWORD=${input:-$DB_PASSWORD}
+    echo -e "${CYAN}Database: SQLite (file-based, no server needed)${NC}"
 else
     echo -e "${GREEN}Using configuration from .env.install:${NC}"
     echo "  App Name: ${APP_NAME}"
     echo "  Environment: ${APP_ENV}"
     echo "  Host: ${APP_HOST}"
-    echo "  Database: ${DB_DATABASE}"
-    echo "  Database User: ${DB_USERNAME}"
     echo ""
 fi
 
@@ -247,16 +226,19 @@ echo -e "${GREEN}✓ VITE_HMR_HOST set to ${APP_HOST}${NC}"
 
 
 
-# Update Database configuration
-# Laravel 12 has commented DB_ lines by default, so we need to uncomment and set them
-sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=${DB_CONNECTION}/" src/.env
-sed -i "s/^# DB_HOST=.*/DB_HOST=${DB_HOST}/" src/.env || sed -i "s/^DB_HOST=.*/DB_HOST=${DB_HOST}/" src/.env
-sed -i "s/^# DB_PORT=.*/DB_PORT=${DB_PORT}/" src/.env || sed -i "s/^DB_PORT=.*/DB_PORT=${DB_PORT}/" src/.env
-sed -i "s/^# DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE}/" src/.env || sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${DB_DATABASE}/" src/.env
-sed -i "s/^# DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME}/" src/.env || sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${DB_USERNAME}/" src/.env
-sed -i "s/^# DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" src/.env || sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${DB_PASSWORD}/" src/.env
+# Set SQLite as database connection
+sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=sqlite/" src/.env
+# Comment out any MySQL-specific lines
+sed -i "s/^DB_HOST=.*/#DB_HOST=/" src/.env
+sed -i "s/^DB_PORT=.*/#DB_PORT=/" src/.env
+sed -i "s/^DB_DATABASE=.*/#DB_DATABASE=/" src/.env
+sed -i "s/^DB_USERNAME=.*/#DB_USERNAME=/" src/.env
+sed -i "s/^DB_PASSWORD=.*/#DB_PASSWORD=/" src/.env
 
-echo -e "${GREEN}✓ .env configured${NC}"
+# Create SQLite database file
+touch src/database/database.sqlite
+
+echo -e "${GREEN}✓ .env configured (SQLite)${NC}"
 
 # Install FilamentPHP v5
 echo -e "${BLUE}Installing FilamentPHP v5...${NC}"
@@ -399,42 +381,6 @@ EOF
     echo -e "${GREEN}✓ .gitignore created${NC}"
 fi
 
-# Create database/data directory
-mkdir -p database/{data,config}
-touch database/data/.gitkeep
-
-# Create database/config directory with my.cnf if not exists
-if [ ! -f "database/config/my.cnf" ]; then
-    echo -e "${BLUE}Creating MySQL configuration...${NC}"
-    mkdir -p database/config
-    cat > database/config/my.cnf <<'EOF'
-[mysqld]
-# Performance
-max_connections = 200
-innodb_buffer_pool_size = 256M
-innodb_log_file_size = 64M
-innodb_flush_log_at_trx_commit = 2
-innodb_flush_method = O_DIRECT
-
-# Character Set
-character-set-server = utf8mb4
-collation-server = utf8mb4_unicode_ci
-
-# Security
-bind-address = 0.0.0.0
-
-# Logging
-general_log = 0
-slow_query_log = 1
-slow_query_log_file = /var/lib/mysql/slow-query.log
-long_query_time = 2
-
-[client]
-default-character-set = utf8mb4
-EOF
-    echo -e "${GREEN}✓ MySQL configuration created${NC}"
-fi
-
 echo ""
 echo -e "${GREEN}============================================="
 echo "  Installation Complete!"
@@ -443,8 +389,7 @@ echo ""
 echo -e "${BLUE}Project Details:${NC}"
 echo "  App Name: ${APP_NAME}"
 echo "  Environment: ${APP_ENV}"
-echo "  Database: ${DB_DATABASE}"
-echo "  Database User: ${DB_USERNAME}"
+echo "  Database: SQLite (src/database/database.sqlite)"
 echo ""
 echo -e "${BLUE}Next Steps:${NC}"
 echo "  1. Build and start containers:"

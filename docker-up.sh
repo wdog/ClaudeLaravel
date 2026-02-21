@@ -84,17 +84,6 @@ echo -e "${GREEN}Build Target: ${BUILD_TARGET}${NC}"
 echo -e "${GREEN}Mode: ${MODE}${NC}"
 echo ""
 
-# Read database config from src/.env
-DB_DATABASE=$(grep -E "^DB_DATABASE=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "laravel")
-DB_USERNAME=$(grep -E "^DB_USERNAME=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "laravel")
-DB_PASSWORD=$(grep -E "^DB_PASSWORD=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "secret")
-
-echo -e "${BLUE}Database Configuration:${NC}"
-echo "  Database: ${DB_DATABASE}"
-echo "  Username: ${DB_USERNAME}"
-echo "  Password: ${DB_PASSWORD:0:3}***"
-echo ""
-
 # Get current user UID/GID for permission mapping
 export PUID=$(id -u)
 export PGID=$(id -g)
@@ -151,9 +140,6 @@ done
 
 # Export variables for docker-compose
 export BUILD_TARGET
-export DB_DATABASE
-export DB_USERNAME
-export DB_PASSWORD
 
 echo -e "${BLUE}Exported Variables:${NC}"
 echo "  PUID: ${PUID}"

@@ -18,13 +18,7 @@ fi
 
 cd /var/www/html
 
-# Wait for database to be ready (if configured)
-if [ -n "$DB_HOST" ] && [ "$DB_HOST" != "localhost" ]; then
-    echo "Waiting for database at $DB_HOST:${DB_PORT:-3306}..."
-    /docker/scripts/wait-for-db.sh
-fi
-
-# Create storage link if it doesn't exist
+dev# Create storage link if it doesn't exist
 if [ ! -L /var/www/html/public/storage ]; then
     echo "Creating storage symlink..."
     php artisan storage:link || true

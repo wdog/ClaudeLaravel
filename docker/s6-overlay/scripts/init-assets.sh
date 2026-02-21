@@ -1,11 +1,18 @@
 #!/command/with-contenv sh
-# init-assets: Build frontend assets
+# init-assets: Build frontend assets and prepare app
 # Runs as root (oneshot, after init-usermod)
 #
-# PRODUCTION: removes hot file, runs npm run build
+# PRODUCTION: removes hot file, runs npm run build, creates sqlite db, runs migrations
 # DEVELOPMENT: skips (Vite HMR handles assets)
 
 cd /var/www/html
+
+# Create SQLite database file if missing (both dev and prod)
+if [ ! -f database/database.sqlite ]; then
+    echo "init-assets: creating database/database.sqlite"
+    touch database/database.sqlite
+    chmod 666 database/database.sqlite
+fi
 
 if [ "$APP_ENV" = "production" ]; then
     echo "init-assets: Production mode"
@@ -23,7 +30,14 @@ if [ "$APP_ENV" = "production" ]; then
     echo "init-assets: Running npm run build..."
     s6-setuidgid www-data npm run build
 
-    echo "init-assets: Assets built successfully"
+    # Run migrations (--force needed in production)
+    echo "init-assets: Running migrations..."
+    s6-setuidgid www-data php artisan migrate --force
+
+    echo "init-assets: done"
 else
-    echo "init-assets: Development mode - skipping (Vite HMR active)"
+    # Run migrations in development too (convenience)
+    echo "init-assets: Development mode - running migrations..."
+    s6-setuidgid www-data php artisan migrate --force 2>/dev/null || echo "init-assets: migration skipped (app not ready yet)"
+    echo "init-assets: Vite HMR will handle assets"
 fi
