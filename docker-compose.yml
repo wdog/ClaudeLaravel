@@ -22,8 +22,6 @@ services:
       - ./src/.env
 
     environment:
-      # Override database host to use container name
-      DB_HOST: mysql
       TZ: Europe/Rome
       # Map www-data UID/GID to host user (fixes permission issues)
       PUID: ${PUID:-1000}
@@ -44,54 +42,12 @@ services:
     networks:
       - laravel-network
 
-    depends_on:
-      mysql:
-        condition: service_healthy
-
     healthcheck:
       test: ["CMD", "/docker/scripts/healthcheck.sh"]
       interval: 30s
       timeout: 10s
       start_period: 40s
       retries: 3
-
-  # ============================================================================
-  # MySQL Database
-  # ============================================================================
-  mysql:
-    image: mysql:8.4
-    restart: unless-stopped
-
-    # Read database credentials from Laravel's .env
-    env_file:
-      - ./src/.env
-
-    environment:
-      # Map Laravel env vars to MySQL env vars
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
-      MYSQL_USER: ${DB_USERNAME:-laravel}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-laravel}
-      TZ: Europe/Rome
-
-    volumes:
-      # Persistent data storage (bind mount per visibilità e backup)
-      - ./database/data:/var/lib/mysql
-      # Custom MySQL configuration
-      - ./database/config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
-
-    ports:
-      - "3306:3306"
-
-    networks:
-      - laravel-network
-
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
 # ============================================================================
 # Networks

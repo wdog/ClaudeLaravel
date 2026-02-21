@@ -47,22 +47,6 @@ services:
     restart: "no"
 
   # ============================================================================
-  # MySQL - Development Overrides
-  # ============================================================================
-  mysql:
-    # Expose MySQL port for external tools (TablePlus, DBeaver, etc.)
-    ports:
-      - "3306:3306"
-
-    # Development doesn't need restart policy
-    restart: "no"
-
-    # Optional: enable general query log for debugging
-    # command:
-    #   - --general-log=1
-    #   - --general-log-file=/var/lib/mysql/general.log
-
-  # ============================================================================
   # Mailpit - Email testing for development
   # ============================================================================
   mailpit:
