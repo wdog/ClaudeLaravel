@@ -17,12 +17,13 @@ if [ "$PUID" = "0" ]; then
         chmod -R 777 /var/lib/nginx/tmp
     fi
 
-    # Make Laravel writable directories accessible to www-data (uid 82)
-    # and to any process that may run as root
+    # Ensure all app files are readable by nginx worker (runs as 'nginx' user)
+    chmod -R a+rX /var/www/html 2>/dev/null || true
+
+    # Make Laravel writable directories accessible to all processes
     if [ -d /var/www/html/storage ]; then
         chmod -R 777 /var/www/html/storage 2>/dev/null || true
         chmod -R 777 /var/www/html/bootstrap/cache 2>/dev/null || true
-        [ -d /var/www/html/public ] && chmod 775 /var/www/html/public
     fi
 
     # SQLite: make database directory and file writable
