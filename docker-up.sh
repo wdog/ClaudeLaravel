@@ -117,7 +117,7 @@ for arg in "$@"; do
             ;;
         --detach|-d)
             DO_START=true
-            DETACH_FLAG="-d"
+            DETACH_FLAG="-d --force-recreate"
             ;;
         --foreground|-f)
             DO_START=true
@@ -175,7 +175,7 @@ if [ "$DO_START" = true ]; then
     if docker-compose ps --services --filter "status=running" 2>/dev/null | grep -q .; then
         echo -e "${YELLOW}Stopping running containers...${NC}"
         echo -e "${BLUE}> docker-compose down${NC}"
-        docker-compose down 2>/dev/null || true
+        docker-compose down --remove-orphans 2>/dev/null || true
         echo -e "${GREEN}✓ Containers stopped${NC}"
         echo ""
     fi

@@ -1,0 +1,4 @@
+#!/command/execlineb -P
+s6-setuidgid www-data
+cd /var/www/html
+/usr/local/bin/php artisan nutgram:listen
