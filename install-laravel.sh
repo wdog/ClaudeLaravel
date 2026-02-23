@@ -262,7 +262,7 @@ echo -e "${GREEN}✓ .env configured${NC}"
 echo -e "${BLUE}Installing FilamentPHP v5...${NC}"
 
 $DOCKER_RUN  -v "$(pwd)/src:/app" -w /app composer:latest \
-    require filament/filament:"^5.0" -W --ignore-platform-reqs
+    require filament/filament:"^5" -W --ignore-platform-reqs
 
 echo -e "${GREEN}✓ FilamentPHP v5 installed${NC}"
 
@@ -276,10 +276,18 @@ echo -e "${GREEN}✓ Filament Panel configured${NC}"
 
 # Install Laravel Debugbar if APP_ENV=local
 if [ "$APP_ENV" = "local" ]; then
-    echo -e "${BLUE}Installing Laravel Debugbar (development)...${NC}"
+    echo -e "${BLUE}Installing Packages (development)...${NC}"
+
     $DOCKER_RUN  -v "$(pwd)/src:/app" -w /app composer:latest \
         require barryvdh/laravel-debugbar --dev --ignore-platform-reqs
     echo -e "${GREEN}✓ Laravel Debugbar installed${NC}"
+
+    $DOCKER_RUN  -v "$(pwd)/src:/app" -w /app composer:latest \
+        require phpest/pest -W --dev --ignore-platform-reqs
+
+    $DOCKER_RUN  -v "$(pwd)/src:/app" -w /app composer:latest \
+        require remove phpunit/phpunit --ignore-platform-reqs
+    echo -e "${GREEN}✓ Pest installed${NC}"
 fi
 
 # Configure Vite (for both development and production)
