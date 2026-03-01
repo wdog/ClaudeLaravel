@@ -26,9 +26,13 @@ if [ "$APP_ENV" = "production" ]; then
         s6-setuidgid www-data npm ci --prefer-offline --no-audit
     fi
 
-    # Build assets
-    echo "init-assets: Running npm run build..."
-    s6-setuidgid www-data npm run build
+    # Build assets (skip if already built - docker-up.sh pre-builds them)
+    if [ -f "public/build/manifest.json" ]; then
+        echo "init-assets: Assets already built, skipping npm run build"
+    else
+        echo "init-assets: Running npm run build..."
+        s6-setuidgid www-data npm run build
+    fi
 
     # Run migrations (--force needed in production)
     echo "init-assets: Running migrations..."

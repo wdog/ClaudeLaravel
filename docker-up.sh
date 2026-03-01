@@ -169,6 +169,14 @@ if [ "$DO_BUILD" = true ]; then
     echo ""
 fi
 
+# Pre-build assets in production (avoids s6-rc timeout during container startup)
+if [ "$DO_START" = true ] && [ "$BUILD_TARGET" = "production" ]; then
+    echo -e "${YELLOW}Pre-building frontend assets...${NC}"
+    docker-compose $COMPOSE_FILES run --rm --no-deps -e APP_ENV=local app npm run build
+    echo -e "${GREEN}✓ Assets built${NC}"
+    echo ""
+fi
+
 # Start if requested
 if [ "$DO_START" = true ]; then
     # Stop running containers before starting
