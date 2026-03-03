@@ -47,13 +47,13 @@ echo ""
 
 # Step 2: Build Docker images
 echo -e "${BLUE}[2/7] Build immagini Docker...${NC}"
-./docker-up.sh -b
+./manager.sh -b
 echo -e "${GREEN}✓ Build completata${NC}"
 echo ""
 
 # Step 3: Start containers in background
 echo -e "${BLUE}[3/7] Avvio containers...${NC}"
-./docker-up.sh -d
+./manager.sh -d
 echo -e "${GREEN}✓ Containers avviati${NC}"
 echo ""
 

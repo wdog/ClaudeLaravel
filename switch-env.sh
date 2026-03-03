@@ -102,7 +102,7 @@ echo -e "${YELLOW}Restarting containers...${NC}"
 echo ""
 
 # Restart containers with new environment
-./docker-up.sh --build
+./manager.sh --build
 
 echo ""
 echo -e "${GREEN}================================${NC}"

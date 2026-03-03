@@ -38,7 +38,7 @@ DB_PASSWORD="laravel"
 
 ```bash
 # Build and run in background
-./docker-up.sh -bd
+./manager.sh -bd
 
 # Run migrations
 docker exec -it laravel-app php artisan migrate --force
@@ -66,14 +66,14 @@ docker exec -it laravel-app php artisan make:filament-user
 ./install-laravel.sh -cf      # Clean install (use defaults)
 ```
 
-### docker-up.sh
+### manager.sh
 
 ```bash
-./docker-up.sh -b       # Build only
-./docker-up.sh -d       # Start detached
-./docker-up.sh -f       # Start foreground (see logs)
-./docker-up.sh -bd      # Build and start detached
-./docker-up.sh -bf      # Build and start foreground
+./manager.sh -b       # Build only
+./manager.sh -d       # Start detached
+./manager.sh -f       # Start foreground (see logs)
+./manager.sh -bd      # Build and start detached
+./manager.sh -bf      # Build and start foreground
 ```
 
 ### Common Docker commands
@@ -138,7 +138,7 @@ ClaudeLaravel/
 ├── test/                 # Test scripts
 ├── .env.install          # Install defaults
 ├── install-laravel.sh    # Installer
-└── docker-up.sh          # Start script
+└── manager.sh          # Start script
 ```
 
 ## Features
@@ -166,7 +166,7 @@ ClaudeLaravel/
 
 2. Build and start:
    ```bash
-   ./docker-up.sh -bd
+   ./manager.sh -bd
    ```
 
 ### What runs
@@ -203,7 +203,7 @@ ClaudeLaravel/
 
 2. Build and start:
    ```bash
-   ./docker-up.sh -bd
+   ./manager.sh -bd
    ```
 
 ### What runs
@@ -343,7 +343,7 @@ Check `src/.env` has `DB_HOST=mysql`
 ### Reset everything
 ```bash
 ./install-laravel.sh -cf
-./docker-up.sh -bd
+./manager.sh -bd
 docker exec -it laravel-app php artisan migrate --force
 ```
 

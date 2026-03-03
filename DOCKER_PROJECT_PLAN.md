@@ -25,7 +25,7 @@
 
 3. **Installation & Workflow**
    - Interactive installation with `./install-laravel.sh`
-   - `docker-up.sh` runs detached by default
+   - `manager.sh` runs detached by default
    - Use `--foreground` flag to see logs
    - Migrations NOT run automatically (manual execution required)
    - Auto-detects development/production mode from `src/.env`
@@ -49,7 +49,7 @@
 ./install-laravel.sh
 
 # 2. Start containers (detached)
-./docker-up.sh --build
+./manager.sh --build
 
 # 3. Run migrations (manual)
 docker exec -it laravel-app php artisan migrate --force

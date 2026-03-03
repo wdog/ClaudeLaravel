@@ -26,7 +26,7 @@ if [ "$APP_ENV" = "production" ]; then
         s6-setuidgid www-data npm ci --prefer-offline --no-audit
     fi
 
-    # Build assets (skip if already built - docker-up.sh pre-builds them)
+    # Build assets (skip if already built - manager.sh pre-builds them)
     if [ -f "public/build/manifest.json" ]; then
         echo "init-assets: Assets already built, skipping npm run build"
     else

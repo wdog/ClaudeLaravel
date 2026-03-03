@@ -63,7 +63,7 @@ Questa checklist traccia lo stato di avanzamento del progetto Docker Laravel.
 - ✅ `.gitignore` - Git exclusions (database/data, ecc.)
 - ✅ `README.md` - Main documentation
 - ✅ `DOCKER_PROJECT_PLAN.md` - Detailed plan
-- ✅ `docker-up.sh` - Helper script per auto-detect mode
+- ✅ `manager.sh` - Helper script per auto-detect mode
 
 ### 1.3 Dockerfile
 
@@ -344,7 +344,7 @@ Questa checklist traccia lo stato di avanzamento del progetto Docker Laravel.
   - 🔲 Service: redis (commented, opzionale futuro)
 
   - ✅ Networks: laravel-network (bridge)
-  - ✅ Helper script: docker-up.sh per auto-detect mode
+  - ✅ Helper script: manager.sh per auto-detect mode
 
 ### 5.2 Development Compose
 
@@ -756,7 +756,7 @@ All scripts use a consistent format:
    - ✅ MySQL data permission handling
 
 4. **Workflow & Scripts** - ✅ COMPLETATO
-   - ✅ docker-up.sh detached by default
+   - ✅ manager.sh detached by default
    - ✅ --foreground flag for logs
    - ✅ NO automatic migrations (manual only)
    - ✅ install-laravel.sh interactive mode

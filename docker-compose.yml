@@ -1,7 +1,7 @@
 # ============================================================================
 # Docker Compose - Base Configuration
 # Reads configuration from src/.env (Laravel's .env file)
-# Use: docker-compose up  OR  ./docker-up.sh (auto-detects dev/prod)
+# Use: docker-compose up  OR  ./manager.sh (auto-detects dev/prod)
 # ============================================================================
 
 services:
@@ -12,7 +12,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-      # target will be set by docker-up.sh based on APP_ENV in src/.env
+      # target will be set by manager.sh based on APP_ENV in src/.env
       target: ${BUILD_TARGET:-production}
     image: laravel-app:${BUILD_TARGET:-production}
     restart: unless-stopped
@@ -36,8 +36,8 @@ services:
       - laravel-sessions:/var/www/html/storage/framework/sessions
 
     ports:
-      - "80:80"     # HTTP (redirects to HTTPS)
-      - "443:443"   # HTTPS
+      - "${HTTP_PORT:-80}:80"     # HTTP (redirects to HTTPS)
+      - "${HTTPS_PORT:-443}:443"  # HTTPS
 
     networks:
       - laravel-network

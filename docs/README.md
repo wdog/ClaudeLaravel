@@ -311,7 +311,7 @@ Per iniziare subito:
 - ✅ **Automatic UID/GID mapping** - www-data matches host user (no more permission issues!)
 - ✅ **s6-overlay v3 with proper oneshot init** - services start in correct order
 - ✅ **s6-setuidgid** for all services (vite-dev, scheduler, queue-worker)
-- ✅ docker-up.sh shows executed commands
+- ✅ manager.sh shows executed commands
 - ✅ Test script for permission verification (`test/test-permissions.sh`)
 - ✅ Manual migrations (not automatic)
 - ✅ Complete documentation

@@ -226,7 +226,7 @@ Risparmio: ~80% di spazio! 🎉
 # - Imposta permessi con sudo chmod 777
 
 # 2. Avvia ambiente development (detached by default)
-./docker-up.sh --build
+./manager.sh --build
 # Auto-rileva mode da src/.env
 
 # 3. Esegui migrazioni (MANUALMENTE - richiesto!)
@@ -246,13 +246,13 @@ docker exec -it laravel-app php artisan migrate --force
 # 6. View logs (in detached mode)
 docker-compose logs -f
 # Oppure usa --foreground
-./docker-up.sh --foreground
+./manager.sh --foreground
 ```
 
 ### Production
 ```bash
 # 1. Build immagine production
-./docker-up.sh --build
+./manager.sh --build
 # Auto-rileva mode da APP_ENV in src/.env
 
 # 2. Esegui migrazioni

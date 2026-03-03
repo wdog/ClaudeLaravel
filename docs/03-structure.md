@@ -121,7 +121,7 @@ ClaudeLaravel/
 ├── docker-compose.yml            # Production compose
 ├── docker-compose.dev.yml        # Development overrides
 ├── install-laravel.sh            # Installation script
-├── docker-up.sh                  # Start script
+├── manager.sh                  # Start script
 ├── .env.example                  # Environment template
 ├── .env.install                  # Install defaults
 ├── .dockerignore                 # Docker build exclusions
@@ -178,7 +178,7 @@ Script di test e verifica.
 | `docker-compose.yml` | Configurazione production |
 | `docker-compose.dev.yml` | Override development |
 | `install-laravel.sh` | Script installazione Laravel |
-| `docker-up.sh` | Script avvio container |
+| `manager.sh` | Script avvio container |
 | `.env.install` | Valori default installazione |
 
 ### Docker Scripts

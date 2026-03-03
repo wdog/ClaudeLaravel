@@ -16,7 +16,7 @@ NC='\033[0m'
 show_help() {
     echo -e "${BLUE}Laravel Docker Startup Script${NC}"
     echo ""
-    echo "Usage: ./docker-up.sh [options]"
+    echo "Usage: ./manager.sh [options]"
     echo ""
     echo "Options:"
     echo "  --build, -b       Build images only (no start)"
@@ -26,12 +26,12 @@ show_help() {
     echo "  --help, -h        Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./docker-up.sh -b           # Build only"
-    echo "  ./docker-up.sh -n           # Build witch no cache only"
-    echo "  ./docker-up.sh -d           # Start detached"
-    echo "  ./docker-up.sh -f           # Start in foreground"
-    echo "  ./docker-up.sh -bd          # Build then start detached"
-    echo "  ./docker-up.sh -bf          # Build then start in foreground"
+    echo "  ./manager.sh -b           # Build only"
+    echo "  ./manager.sh -n           # Build witch no cache only"
+    echo "  ./manager.sh -d           # Start detached"
+    echo "  ./manager.sh -f           # Start in foreground"
+    echo "  ./manager.sh -bd          # Build then start detached"
+    echo "  ./manager.sh -bf          # Build then start in foreground"
     echo ""
     echo "The script auto-detects development/production mode from src/.env"
     exit 0
@@ -87,6 +87,12 @@ echo ""
 # Get current user UID/GID for permission mapping
 export PUID=$(id -u)
 export PGID=$(id -g)
+
+# Read port configuration from src/.env
+export HTTP_PORT=$(grep -E "^HTTP_PORT=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "80")
+export HTTPS_PORT=$(grep -E "^HTTPS_PORT=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "443")
+HTTP_PORT=${HTTP_PORT:-80}
+HTTPS_PORT=${HTTPS_PORT:-443}
 
 # Extract host from APP_URL in .env for Vite HMR
 APP_URL=$(grep -E "^APP_URL=" src/.env | cut -d '=' -f2 | tr -d ' "' || echo "https://localhost")
@@ -146,6 +152,8 @@ echo "  PUID: ${PUID}"
 echo "  PGID: ${PGID}"
 echo "  BUILD_TARGET: ${BUILD_TARGET}"
 echo "  HOST_IP: ${HOST_IP}"
+echo "  HTTP_PORT: ${HTTP_PORT}"
+echo "  HTTPS_PORT: ${HTTPS_PORT}"
 echo ""
 
 # Determine which compose files to use
@@ -217,9 +225,9 @@ if [ "$DO_START" = true ]; then
     fi
     echo ""
     echo -e "${BLUE}Useful commands:${NC}"
-    echo "  docker-compose exec app php artisan migrate [--force]"
-    echo "  docker-compose exec app php artisan [command]"
-    echo "  docker-compose exec app composer [command]"
+    echo "  docker-compose exec -uwww-data app php artisan migrate [--force]"
+    echo "  docker-compose exec -uwww-data app php artisan [command]"
+    echo "  docker-compose exec -uwww-data app composer [command]"
     if [ "$BUILD_TARGET" = "development" ]; then
         echo "  docker-compose exec app npm [command]"
     fi

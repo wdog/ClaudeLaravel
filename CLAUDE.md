@@ -19,8 +19,8 @@ Docker-based Laravel 12 + FilamentPHP v5 development environment with automatic 
 ./install-laravel.sh -i      # Interactive fresh install
 ./install-laravel.sh -if     # Non-interactive install (uses .env.install defaults)
 ./install-laravel.sh -cf     # Clean install (removes src/ and database/)
-./docker-up.sh -bd           # Build and start detached
-./docker-up.sh -bf           # Build and start foreground (see logs)
+./manager.sh -bd           # Build and start detached
+./manager.sh -bf           # Build and start foreground (see logs)
 docker-compose down          # Stop containers
 ```
 
@@ -63,7 +63,7 @@ Container Start (root)
 ```
 
 ### Environment Detection
-`docker-up.sh` reads `APP_ENV` from `src/.env`:
+`manager.sh` reads `APP_ENV` from `src/.env`:
 - `APP_ENV=local` → Development mode (Vite HMR enabled)
 - `APP_ENV=production` → Production mode (assets pre-built, vite-dev disabled)
 

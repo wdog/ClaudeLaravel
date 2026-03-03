@@ -407,8 +407,8 @@ docker build \
 ### Con docker-compose
 
 ```bash
-# Il target viene scelto automaticamente da docker-up.sh
-./docker-up.sh -bd
+# Il target viene scelto automaticamente da manager.sh
+./manager.sh -bd
 ```
 
 ---
