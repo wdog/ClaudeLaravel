@@ -28,6 +28,8 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     freetype-dev \
     icu-dev \
+    icu-data-full \
+    icu-libs \
     oniguruma-dev \
     libxml2-dev \
     curl-dev \
